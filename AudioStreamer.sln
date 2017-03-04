@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AudioStreamer", "AudioStreamer\AudioStreamer.vcxproj", "{76C43BD0-1D15-40DA-8361-54056527428C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AudioPlayer", "AudioPlayer\AudioPlayer.vcxproj", "{D69CD283-AB68-4F71-974A-E8C4FC8F484E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{76C43BD0-1D15-40DA-8361-54056527428C}.Debug|x64.ActiveCfg = Debug|x64
+		{76C43BD0-1D15-40DA-8361-54056527428C}.Debug|x64.Build.0 = Debug|x64
+		{76C43BD0-1D15-40DA-8361-54056527428C}.Debug|x86.ActiveCfg = Debug|Win32
+		{76C43BD0-1D15-40DA-8361-54056527428C}.Debug|x86.Build.0 = Debug|Win32
+		{76C43BD0-1D15-40DA-8361-54056527428C}.Release|x64.ActiveCfg = Release|x64
+		{76C43BD0-1D15-40DA-8361-54056527428C}.Release|x64.Build.0 = Release|x64
+		{76C43BD0-1D15-40DA-8361-54056527428C}.Release|x86.ActiveCfg = Release|Win32
+		{76C43BD0-1D15-40DA-8361-54056527428C}.Release|x86.Build.0 = Release|Win32
+		{D69CD283-AB68-4F71-974A-E8C4FC8F484E}.Debug|x64.ActiveCfg = Debug|x64
+		{D69CD283-AB68-4F71-974A-E8C4FC8F484E}.Debug|x64.Build.0 = Debug|x64
+		{D69CD283-AB68-4F71-974A-E8C4FC8F484E}.Debug|x86.ActiveCfg = Debug|Win32
+		{D69CD283-AB68-4F71-974A-E8C4FC8F484E}.Debug|x86.Build.0 = Debug|Win32
+		{D69CD283-AB68-4F71-974A-E8C4FC8F484E}.Release|x64.ActiveCfg = Release|x64
+		{D69CD283-AB68-4F71-974A-E8C4FC8F484E}.Release|x64.Build.0 = Release|x64
+		{D69CD283-AB68-4F71-974A-E8C4FC8F484E}.Release|x86.ActiveCfg = Release|Win32
+		{D69CD283-AB68-4F71-974A-E8C4FC8F484E}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
