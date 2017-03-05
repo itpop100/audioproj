@@ -20,8 +20,6 @@ version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' la
 #endif
 
 #include "AudioPlayer.h"
-#include "common.h"
-#include "resource.h"
 #pragma comment(lib,"comctl32.lib")
 
 // defaults
