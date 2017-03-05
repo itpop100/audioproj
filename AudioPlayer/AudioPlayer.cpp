@@ -134,12 +134,9 @@ bool AudioPlayer::runClient(WSADATA* wsadata, const char* hostname, const int po
             MessageBox(NULL, "Can't connect to server", "Connection Error", MB_ICONERROR);
             return FALSE;
         }
-
         currentState = WAITFORCOMMAND;
-
         return TRUE;
     }
-
     return FALSE;
 }
 
@@ -193,13 +190,9 @@ bool AudioPlayer::dispatchWSARecvRequest(LPSOCKETDATA data)
             }
             return TRUE;
         }
-        else
-        {
-            freeData(data);
-            free(rc);
-            return FALSE;
-        }
-
+        freeData(data);
+        free(rc);
+        return FALSE;
     }
 
     return FALSE;
@@ -497,13 +490,9 @@ bool AudioPlayer::dispatchWSASendRequest(LPSOCKETDATA data)
     {
         return TRUE;
     }
-    else
-    {
-        freeData(data);
-        free(rc);
-        return FALSE;
-    }
-
+    freeData(data);
+    free(rc);
+    return FALSE;
 }
 
 /*------------------------------------------------------------------------------------------------------------------
@@ -948,13 +937,10 @@ DWORD AudioPlayer::ulThread(LPVOID params)
         {
             clnt->currentState = WAITFORCOMMAND;
             break;
-        
         }
     }
-    
     sprintf(prog, "Upload done.");
     MessageBox(NULL, "Upload done", "Upload", MB_ICONINFORMATION);
-
     return TRUE;
 }
 
