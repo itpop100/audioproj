@@ -20,10 +20,10 @@
 
 // multicast socket struct
 typedef struct {
-	std::ifstream* file;
-	SOCKET socket;
-	SOCKADDR_IN mcaddr;
-	int filesize;
+    std::ifstream* file;
+    SOCKET socket;
+    SOCKADDR_IN mcaddr;
+    int filesize;
 } MCSOCKET, *LPMCSOCKET;
 
 // function prototypes

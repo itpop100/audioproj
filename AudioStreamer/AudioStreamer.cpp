@@ -4,15 +4,16 @@
 -- PROGRAM:     AudioStreamer
 --
 -- FUNCTIONS:
---		        int main(int argc, char * argv[])
---		        DWORD WINAPI listenThread(LPVOID args)
---		        DWORD WINAPI listenRequest(LPVOID param)
---		        ServerState decodeRequest(char * request, string& fileName, int& fileSize)
---		        void handleRequest(ServerState prevState, ServerState currentState, SOCKET clntSocket, string fileName, int fileSize)
---		        DWORD WINAPI mcThread(LPVOID args)
---		        int  __stdcall  mcCallbackFunc(void* instance, void *user_data, libZPlay::TCallbackMessage message, unsigned int param1, unsigned int param2)
---		        string getAudioPath()
---		        int populatePlayList(vector<string>& list)
+--              int main(int argc, char * argv[])
+--              DWORD WINAPI listenThread(LPVOID args)
+--              DWORD WINAPI listenRequest(LPVOID param)
+--              ServerState decodeRequest(char* request, string& fileName, int& fileSize)
+--              void handleRequest(ServerState currentState, SOCKET clntSocket, string fileName, DWORD fileSize)
+--              DWORD WINAPI mcThread(LPVOID args)
+--              int  __stdcall  mcCallbackFunc(void* instance, void *user_data, libZPlay::TCallbackMessage message, 
+--                                             unsigned int param1, unsigned int param2)
+--              string getAudioPath()
+--              int populatePlayList(vector<string>& list)
 --
 -- DATE:        March 10, 2017
 --
@@ -68,24 +69,24 @@ int main(int argc, char* argv[])
     system("Color 1A");
     setCursor();
 
-	cout << "--------------------------------------------------" << endl;
-	cout << "   *** " << title << " ***" << endl;
-	cout << "--------------------------------------------------" << endl;
+    cout << "--------------------------------------------------" << endl;
+    cout << "   *** " << title << " ***" << endl;
+    cout << "--------------------------------------------------" << endl;
 
     SOCKET listenSocket;
     vector<SOCKET> clientList;
 
     // contains information about the Windows Sockets implementation.
-	WSADATA wsadata;
+    WSADATA wsadata;
 
     // create listen socket
-	listenSocket = createListenSocket(&wsadata, TCP);
+    listenSocket = createListenSocket(&wsadata, TCP);
 
-	CreateThread(NULL, 0, listenThread, (LPVOID) &listenSocket, 0, 0);
-	CreateThread(NULL, 0, mcThread, NULL, 0, 0);
+    CreateThread(NULL, 0, listenThread, (LPVOID) &listenSocket, 0, 0);
+    CreateThread(NULL, 0, mcThread, NULL, 0, 0);
 
-	getchar();
-	return EXIT_SUCCESS;
+    getchar();
+    return EXIT_SUCCESS;
 }
 
 /*------------------------------------------------------------------------------------------------------------------
@@ -111,9 +112,9 @@ int main(int argc, char* argv[])
 
 DWORD WINAPI listenThread(LPVOID params)
 {
-    SOCKET* pListenSock = (SOCKET*) params;
+    SOCKET* listenSocket = (SOCKET*) params;
 
-    cout << "Server started, listening on socket " << *pListenSock << endl;
+    cout << "Server started, listening on socket " << *listenSocket << endl;
 
     while(TRUE)
     {
@@ -122,9 +123,9 @@ DWORD WINAPI listenThread(LPVOID params)
 
         // Once listen() call has returned, the accept() call should be issued, this will block
         // until a connection request is received from a remote host.
-        SOCKET newClientSocket = WSAAccept(*pListenSock, (sockaddr*)&addr, &addrLen, NULL, NULL);
+        SOCKET clientSocket = WSAAccept(*listenSocket, (sockaddr*)&addr, &addrLen, NULL, NULL);
 
-        if(newClientSocket == INVALID_SOCKET)
+        if(clientSocket == INVALID_SOCKET)
         {
             if(WSAGetLastError() != WSAEWOULDBLOCK)
             {
@@ -134,9 +135,9 @@ DWORD WINAPI listenThread(LPVOID params)
         }
         else
         {
-            cout << "Socket " << newClientSocket << " accepted." << endl;
-			// spawn a new thread to serve the client
-			CreateThread(NULL, 0, listenRequest, (LPVOID) &newClientSocket, 0, 0);
+            cout << "Socket " << clientSocket << " accepted." << endl;
+            // spawn a new thread to serve the client
+            CreateThread(NULL, 0, listenRequest, (LPVOID) &clientSocket, 0, 0);
         }
 
         // make the thread alertable, the same thread will handle the remaining stuff till completion
@@ -169,55 +170,55 @@ DWORD WINAPI listenThread(LPVOID params)
 ----------------------------------------------------------------------------------------------------------------------*/
 DWORD WINAPI listenRequest(LPVOID params)
 {
-	SOCKET clntSocket = *((SOCKET*) params);
-	int bytesReceived, bytesToRead;
-	char request[STREAMBUFSIZE];
-	char* req;
-	string fileName;
-	DWORD fileSize;
-    ServerState newState = IDLE, prevState = IDLE;
+    SOCKET clntSocket = *((SOCKET*) params);
+    int bytesReceived, bytesToRead;
+    char request[MAXBUFSIZE];
+    char* req;
+    string fileName;
+    DWORD fileSize;
+    ServerState newState = STATEIDLE, prevState = STATEIDLE;
 
-	while (TRUE)
-	{
-		memset(request, 0, STREAMBUFSIZE);
-		req = request;
-		bytesToRead = STREAMBUFSIZE;
+    while (TRUE)
+    {
+        memset(request, 0, MAXBUFSIZE);
+        req = request;
+        bytesToRead = MAXBUFSIZE;
 
-		while ((bytesReceived = recv(clntSocket, req, bytesToRead, 0)) > 0)
-		{
-			req += bytesReceived;
-			bytesToRead -= bytesReceived;
+        while ((bytesReceived = recv(clntSocket, req, bytesToRead, 0)) > 0)
+        {
+            req += bytesReceived;
+            bytesToRead -= bytesReceived;
 
-			if (bytesReceived <= STREAMBUFSIZE)
-				break;
-		}
+            if (bytesReceived <= MAXBUFSIZE)
+                break;
+        }
 
-		if (bytesReceived < 0)
-		{
-			if (GetLastError() == WSAECONNRESET)
-			{
-				cerr << "client disconnected" << endl;
-				return FALSE;
-			}
+        if (bytesReceived < 0)
+        {
+            if (GetLastError() == WSAECONNRESET)
+            {
+                cerr << "client disconnected" << endl;
+                return FALSE;
+            }
 
-			cout << "Error: " << WSAGetLastError() << endl;
-			return FALSE;
-		}
+            cout << "Error: " << WSAGetLastError() << endl;
+            return FALSE;
+        }
 
-		// updated previous state if necessary
-		if (prevState != IDLE)
-			prevState = newState;
+        // updated previous state if necessary
+        if (prevState != STATEIDLE)
+            prevState = newState;
 
-		//get the new current state
-		newState = decodeRequest(request, fileName, fileSize);
+        //get the new current state
+        newState = decodeRequest(request, fileName, fileSize);
 
-		if (newState == STATEERR)
-			break;
+        if (newState == STATEERR)
+            break;
 
-		handleRequest(newState, clntSocket, fileName, fileSize);
-	}
+        handleRequest(newState, clntSocket, fileName, fileSize);
+    }
 
-	return TRUE;
+    return TRUE;
 }
 
 
@@ -246,40 +247,39 @@ DWORD WINAPI listenRequest(LPVOID params)
 ----------------------------------------------------------------------------------------------------------------------*/
 ServerState decodeRequest(char* request, string& fileName, DWORD& fileSize)
 {
-	//const string req = request;
-	stringstream ss(request);
-	int reqType = REQIDLE;
-    ServerState state = IDLE;
+    stringstream ss(request);
+    int reqType = REQIDLE;
+    ServerState state = STATEIDLE;
 
     if (ss >> reqType)
     cout << getCommand(reqType) << ">>>>>";
 
     switch (reqType) {
     case REQLIST:
-        state = LIST;
+        state = STATELIST;
         break;
     case REQSTREAM:
-        state = STREAMING;
+        state = STATESTREAMING;
         getline(ss, fileName);
         cout << fileName << endl;
         break;
     case REQDOWNLOAD:
-        state = DOWNLOADING;
+        state = STATEDOWNLOADING;
         getline(ss, fileName);
         cout << fileName << endl;
         break;
     case REQUPLOAD:
-        state = UPLOADING;
+        state = STATEUPLOADING;
         ss >> fileSize;
         getline(ss, fileName);
         cout << fileName << " (" << fileSize << " b)" << endl;
         break;
     case REQMICCHAT:
-        state = MICCHATTING;
+        state = STATEMICCHATTING;
         cout << "Starting 2 way chatting" << endl;
         break;
     case REQMULTICAST:
-        state = MULTICASTING;
+        state = STATEMULTICASTING;
         cout << "Put client on the multicast channel" << endl;
         break;
     default:
@@ -316,234 +316,234 @@ ServerState decodeRequest(char* request, string& fileName, DWORD& fileSize)
 void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fileName, DWORD fileSize)
 {
     char*			tmp;
-	int				bytesSent = 0,          // bytes sent
-					bytesReceived = 0;      // bytes received
-	int				totalbytesSent	= 0,    // total bytes sent
-					totalbytesReceived = 0; // total bytes received
-	string			line;                   // line to hold the file name
-	ifstream		fileToSend;             // file read stream
-	ofstream		fileReceived;           // file write stream
-	streamsize		bytesRead;              // bytes to read
-	vector<string>	list;                   // play list
-	int				count;                  // number of songs
+    int				bytesSent = 0,          // bytes sent
+                    bytesReceived = 0;      // bytes received
+    int				totalbytesSent	= 0,    // total bytes sent
+                    totalbytesReceived = 0; // total bytes received
+    string			line;                   // line to hold the file name
+    ifstream		fileToSend;             // file read stream
+    ofstream		fileReceived;           // file write stream
+    streamsize		bytesRead;              // bytes to read
+    vector<string>	list;                   // play list
+    int				count;                  // number of songs
     DWORD           fsize = 0;
-	ostringstream oss;
-	streampos begin, end;
+    ostringstream oss;
+    streampos begin, end;
 
-	switch (currentState)
-	{
-		case LIST:
-			count = populatePlayList((vector<string>&)list);
+    switch (currentState)
+    {
+        case STATELIST:
+            count = populatePlayList((vector<string>&)list);
 
-			if (count > 0)
-			{
-				for (vector<string>::iterator it = list.begin(); it != list.end(); ++it)
-				{
-					line += *it;
-					line += '\n';
-				}
+            if (count > 0)
+            {
+                for (vector<string>::iterator it = list.begin(); it != list.end(); ++it)
+                {
+                    line += *it;
+                    line += '\n';
+                }
 
-				if (((bytesSent = send(clntSocket, line.c_str(), line.size(), 0))) == 0 || (bytesSent == -1))
-				{
-					cerr << "Failed to send packet, Error: " << GetLastError() << endl;
-					return;
-				}
-			}
+                if (((bytesSent = send(clntSocket, line.c_str(), line.size(), 0))) == 0 || (bytesSent == -1))
+                {
+                    cerr << "Failed to send packet, Error: " << GetLastError() << endl;
+                    return;
+                }
+            }
 
-			// send EOT
-			line = EOT;
-			send(clntSocket, line.c_str(), line.size(), 0);
-			cout << "Play list sent" << endl;
-		    break;
+            // send EOT
+            line = EOT;
+            send(clntSocket, line.c_str(), line.size(), 0);
+            cout << "Play list sent" << endl;
+            break;
 
-		case STREAMING:
-			// open the audio file
-			fileToSend.open(getAudioPath().substr(0,getAudioPath().size()-1).insert(getAudioPath().size()-1,
+        case STATESTREAMING:
+            // open the audio file
+            fileToSend.open(getAudioPath().substr(0,getAudioPath().size()-1).insert(getAudioPath().size()-1,
                             fileName.substr(1,fileName.size())), ios::binary);
 
-			if (!fileToSend.is_open())
-			{
+            if (!fileToSend.is_open())
+            {
                 line = to_string(REQSTREAM) + "\n";
-				send(clntSocket, line.c_str(), line.size(), 0);
-				line = "";
-				cout << "Streaming request denied. Can't open file." << endl;
-				break;
-			}
+                send(clntSocket, line.c_str(), line.size(), 0);
+                line = "";
+                cout << "Streaming request denied. Can't open file." << endl;
+                break;
+            }
 
-			// compute size of the file
-			begin = fileToSend.tellg();
-			fileToSend.seekg(0, ios::end);
-			fsize = static_cast<long int>(fileToSend.tellg() - begin);
-			fileToSend.seekg(begin);
-			cout << fileName << " (" << fsize << " b)" << endl;
+            // compute size of the file
+            begin = fileToSend.tellg();
+            fileToSend.seekg(0, ios::end);
+            fsize = static_cast<long int>(fileToSend.tellg() - begin);
+            fileToSend.seekg(begin);
+            cout << fileName << " (" << fsize << " b)" << endl;
 
-			// echo the file size to the client
-			oss << REQSTREAM << " " << fsize << "\n";
-			line = oss.str();
-			send(clntSocket, line.c_str(), line.size(), 0);
-			line = "";
+            // echo the file size to the client
+            oss << REQSTREAM << " " << fsize << "\n";
+            line = oss.str();
+            send(clntSocket, line.c_str(), line.size(), 0);
+            line = "";
 
-			cout << "Streaming..." << endl;
+            cout << "Streaming..." << endl;
 
-			while (TRUE)
-			{
-				tmp = new char[TMPBUFSIZE];
+            while (TRUE)
+            {
+                tmp = new char[DATABUFSIZE];
 
-				bytesRead = 0;
-				fileToSend.read(tmp, TMPBUFSIZE);
-				
-				if((bytesRead = fileToSend.gcount()) > 0)
-				{
-					line.append(tmp, static_cast<unsigned int>(bytesRead));
-					if (((bytesSent = send(clntSocket, line.c_str(), line.size(), 0))) == 0 || (bytesSent == -1))
-					{
-						cerr << "Failed to send! Exited with error " << GetLastError() << endl;
-						cerr << "Ending streaming session..." << endl;
-						fileToSend.close();
-						delete[] tmp;
-						return;
-					}
+                bytesRead = 0;
+                fileToSend.read(tmp, DATABUFSIZE);
+                
+                if((bytesRead = fileToSend.gcount()) > 0)
+                {
+                    line.append(tmp, static_cast<unsigned int>(bytesRead));
+                    if (((bytesSent = send(clntSocket, line.c_str(), line.size(), 0))) == 0 || (bytesSent == -1))
+                    {
+                        cerr << "Failed to send! Exited with error " << GetLastError() << endl;
+                        cerr << "Ending streaming session..." << endl;
+                        fileToSend.close();
+                        delete[] tmp;
+                        return;
+                    }
 
-					totalbytesSent += bytesSent;
-					cout << "Bytes sent: " << bytesSent << endl;
-					cout << "Total bytes sent: " << totalbytesSent << endl;
-					line.clear();
-				} 
-				
-				if (totalbytesSent == fsize)
-					break;
-			}
+                    totalbytesSent += bytesSent;
+                    cout << "Bytes sent: " << bytesSent << endl;
+                    cout << "Total bytes sent: " << totalbytesSent << endl;
+                    line.clear();
+                } 
+                
+                if (totalbytesSent == fsize)
+                    break;
+            }
 
-			cout << "Done streaming" << endl;
+            cout << "Done streaming" << endl;
             line = EOT;
-			send(clntSocket, line.c_str(), line.size(), 0);
-			fileToSend.close();
-			delete[] tmp;
-			break;
+            send(clntSocket, line.c_str(), line.size(), 0);
+            fileToSend.close();
+            delete[] tmp;
+            break;
 
-		case DOWNLOADING:
-			// open the audio file
-			fileToSend.open(getAudioPath().substr(0,getAudioPath().size()-1).insert(getAudioPath().size()-1,
+        case STATEDOWNLOADING:
+            // open the audio file
+            fileToSend.open(getAudioPath().substr(0,getAudioPath().size()-1).insert(getAudioPath().size()-1,
                             fileName.substr(1,fileName.size())), ios::binary);
 
-			if (!fileToSend.is_open())
-			{
-				line = to_string(REQDOWNLOAD) + "\n";
-				send(clntSocket, line.c_str(), line.size(), 0);
-				line = "";
-				cout << "Download request denied. Can't open file" << endl;
-				break;
-			}
+            if (!fileToSend.is_open())
+            {
+                line = to_string(REQDOWNLOAD) + "\n";
+                send(clntSocket, line.c_str(), line.size(), 0);
+                line = "";
+                cout << "Download request denied. Can't open file" << endl;
+                break;
+            }
 
-			// compute size of the file
-			begin = fileToSend.tellg();
-			fileToSend.seekg(0, ios::end);
-			fsize = static_cast<long int>(fileToSend.tellg() - begin);
-			fileToSend.seekg(begin);
-			cout << fileName << " (" << fsize << " b)" << endl;
+            // compute size of the file
+            begin = fileToSend.tellg();
+            fileToSend.seekg(0, ios::end);
+            fsize = static_cast<long int>(fileToSend.tellg() - begin);
+            fileToSend.seekg(begin);
+            cout << fileName << " (" << fsize << " b)" << endl;
 
-			// echo the file size to the client
-			oss << REQDOWNLOAD << " " << fsize << "\n";
-			line = oss.str();
-			send(clntSocket, line.c_str(), line.size(), 0);
-			line = "";
+            // echo the file size to the client
+            oss << REQDOWNLOAD << " " << fsize << "\n";
+            line = oss.str();
+            send(clntSocket, line.c_str(), line.size(), 0);
+            line = "";
 
-			while (TRUE)
-			{
-				tmp = new char [STREAMBUFSIZE];
+            while (TRUE)
+            {
+                tmp = new char [MAXBUFSIZE];
 
-				bytesRead = 0;
-				fileToSend.read(tmp, STREAMBUFSIZE);
-				
-				if((bytesRead = fileToSend.gcount()) > 0)
-				{
-					line.append(tmp, static_cast<unsigned int>(bytesRead));
-					if (((bytesSent = send(clntSocket, line.c_str(), line.size(), 0))) == 0 || (bytesSent == -1))
-					{
-						cerr << "Failed to send! Exited with error " << GetLastError() << endl;
-						cerr << "Ending download session..." << endl;
-						fileToSend.close();
-						delete[] tmp;
-						return;
-					}
+                bytesRead = 0;
+                fileToSend.read(tmp, MAXBUFSIZE);
+                
+                if((bytesRead = fileToSend.gcount()) > 0)
+                {
+                    line.append(tmp, static_cast<unsigned int>(bytesRead));
+                    if (((bytesSent = send(clntSocket, line.c_str(), line.size(), 0))) == 0 || (bytesSent == -1))
+                    {
+                        cerr << "Failed to send! Exited with error " << GetLastError() << endl;
+                        cerr << "Ending download session..." << endl;
+                        fileToSend.close();
+                        delete[] tmp;
+                        return;
+                    }
 
-					totalbytesSent += bytesSent;
-					cout << "Bytes sent: " << bytesSent << endl;
-					cout << "Total bytes sent: " << totalbytesSent << endl;
-					line.clear();
-				} 
-				
-				if (totalbytesSent == fsize)
-					break;
-			}
+                    totalbytesSent += bytesSent;
+                    cout << "Bytes sent: " << bytesSent << endl;
+                    cout << "Total bytes sent: " << totalbytesSent << endl;
+                    line.clear();
+                } 
+                
+                if (totalbytesSent == fsize)
+                    break;
+            }
 
-			cout << "Done downloading" << endl;
+            cout << "Done downloading" << endl;
             line = EOT;
-			send(clntSocket, line.c_str(), line.size(), 0);
-			fileToSend.close();
-			delete[] tmp;
-		    break;
+            send(clntSocket, line.c_str(), line.size(), 0);
+            fileToSend.close();
+            delete[] tmp;
+            break;
 
-		case UPLOADING:
-			cout << "Uploading..." << endl;
-			cout << "File size: " << fsize << endl;
+        case STATEUPLOADING:
+            cout << "Uploading..." << endl;
+            cout << "File size: " << fsize << endl;
 
-			line = to_string(REQUPLOAD) + " " + fileName + "\n";
-			send(clntSocket, line.c_str(), line.size(), 0);
-			line = "";
+            line = to_string(REQUPLOAD) + " " + fileName + "\n";
+            send(clntSocket, line.c_str(), line.size(), 0);
+            line = "";
 
-			// save file to the folder specified (eg. \\audio)
-			fileReceived.open(getAudioPath().substr(0,getAudioPath().size()-1).append(fileName), ios::binary);
-			
-			if (!fileReceived.is_open())
-			{
-				line = to_string(REQUPLOAD) + "\n";
-				send(clntSocket, line.c_str(), line.size(), 0);
-				line = "";
-				break;
-			}
-			
-			while (TRUE)
-			{
-				tmp = new char[STREAMBUFSIZE];
-				memset(tmp, 0, STREAMBUFSIZE);
+            // save file to the folder specified (eg. \\audio)
+            fileReceived.open(getAudioPath().substr(0,getAudioPath().size()-1).append(fileName), ios::binary);
+            
+            if (!fileReceived.is_open())
+            {
+                line = to_string(REQUPLOAD) + "\n";
+                send(clntSocket, line.c_str(), line.size(), 0);
+                line = "";
+                break;
+            }
+            
+            while (TRUE)
+            {
+                tmp = new char[MAXBUFSIZE];
+                memset(tmp, 0, MAXBUFSIZE);
 
-				if (((bytesReceived = recv(clntSocket, tmp, STREAMBUFSIZE, 0)) == 0) || (bytesReceived == -1))
-				{
-					cerr << "recv failed with error " << GetLastError() << endl;
-					cout << "Ending upload session..." << endl;
-					fileReceived.close();
-					delete[] tmp;
-					return;
-				}
+                if (((bytesReceived = recv(clntSocket, tmp, MAXBUFSIZE, 0)) == 0) || (bytesReceived == -1))
+                {
+                    cerr << "recv failed with error " << GetLastError() << endl;
+                    cout << "Ending upload session..." << endl;
+                    fileReceived.close();
+                    delete[] tmp;
+                    return;
+                }
 
-				fileReceived.write(tmp, bytesReceived);
-				totalbytesReceived += bytesReceived;
-				cout << "Bytes received: " << bytesReceived << endl;
-				cout << "Total bytes received: " << totalbytesReceived << endl;
+                fileReceived.write(tmp, bytesReceived);
+                totalbytesReceived += bytesReceived;
+                cout << "Bytes received: " << bytesReceived << endl;
+                cout << "Total bytes received: " << totalbytesReceived << endl;
 
-				if (totalbytesReceived == fileSize) // uploading done
-				{
-					cout << "Done uploading" << endl;
-					fileReceived.close();
-					delete[] tmp;
-					break;
-				}
-				delete[] tmp;
-			}
+                if (totalbytesReceived == fileSize) // uploading done
+                {
+                    cout << "Done uploading" << endl;
+                    fileReceived.close();
+                    delete[] tmp;
+                    break;
+                }
+                delete[] tmp;
+            }
 
-		break;
+        break;
 
-		case MICCHATTING:
-			cout << "Mic session started..." << endl;
-			startMicChat();
-		break;
+        case STATEMICCHATTING:
+            cout << "Mic session started..." << endl;
+            startMicChat();
+        break;
 
-		case MULTICASTING:
-			// Stream audio to the multicast address
+        case STATEMULTICASTING:
+            // Stream audio to the multicast address
             cout << "Multicast started..." << endl;
-		break;
-	}
+        break;
+    }
 }
 
 
@@ -570,155 +570,155 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
 ----------------------------------------------------------------------------------------------------------------------*/
 DWORD WINAPI mcThread(LPVOID params)
 {
-	char			mcAddr[ADDRSIZE] = MULTICAST_ADDR;   // multicast address
-	u_short			nPort = MULTICAST_PORT;              // multicast port
-	u_long			mcTTL = MULTICAST_TTL;               // multicast TTL
-	DWORD		    nRet,                                // result
-					count;                               // number of audios
-	BOOL			fFlag;
-	SOCKADDR_IN		server,
-					destination;
+    char			mcAddr[ADDRSIZE] = MULTICAST_ADDR;   // multicast address
+    u_short			nPort = MULTICAST_PORT;              // multicast port
+    u_long			mcTTL = MULTICAST_TTL;               // multicast TTL
+    DWORD		    result,                              // result
+                    count;                               // number of songs
+    BOOL			flag = false;
+    SOCKADDR_IN		server,
+                    destination;
 
-	struct ip_mreq	stMreq;     // struct for IP_MREQ (IP_ADD_MEMBERSHIP, IP_DROP_MEMBERSHIP)
-	SOCKET			hSocket;    // socket to create
-	WSADATA			stWSAData;
-	vector<string>	list;       // play list
+    struct ip_mreq	stMreq;     // struct for IP_MREQ (IP_ADD_MEMBERSHIP, IP_DROP_MEMBERSHIP)
+    SOCKET			stSocket;    // socket to create
+    WSADATA			stWSAData;
+    vector<string>	list;       // play list
 
-	string			dir,        // audio absolute path
-					line;       // line to hold the file name
-	ifstream*		fileToSend; // file read stream
-	fileToSend = new ifstream;
+    string			dir,        // audio absolute path
+                    line;       // line to hold the file name
+    ifstream*		fileToSend; // file read stream
+    fileToSend = new ifstream;
 
-	LPMCSOCKET mcSocket = (LPMCSOCKET) malloc(sizeof(MCSOCKET));
+    // multicast socket information struct
+    LPMCSOCKET mcSocket = (LPMCSOCKET) malloc(sizeof(MCSOCKET));
 
-	nRet = WSAStartup(0x0202, &stWSAData);
-	if (nRet)
-	{
-		cerr << "WSAStartup failed: " << nRet << endl;	
-		return FALSE;
-	}
+    result = WSAStartup(0x0202, &stWSAData);
+    if (result)
+    {
+        cerr << "WSAStartup failed: " << result << endl;	
+        return FALSE;
+    }
 
-	hSocket = socket(AF_INET, SOCK_DGRAM, 0);
-	if (hSocket == INVALID_SOCKET)
-	{
-		cerr << "socket() failed, Err: " << WSAGetLastError() << endl;
-		return FALSE;
-	}
+    stSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (stSocket == INVALID_SOCKET)
+    {
+        cerr << "socket() failed: " << WSAGetLastError() << endl;
+        return FALSE;
+    }
 
-	server.sin_family      = AF_INET; 
-	server.sin_addr.s_addr = htonl(INADDR_ANY);
-	server.sin_port        = 0;
+    server.sin_family      = AF_INET; 
+    server.sin_addr.s_addr = htonl(INADDR_ANY);
+    server.sin_port        = 0;
 
-	nRet = bind(hSocket, (struct sockaddr*)&server, sizeof(server));
-	if (nRet == SOCKET_ERROR) 
-	{
-		cerr << "bind() port: " << nPort << " failed, Err: " << WSAGetLastError() << endl;
-		return FALSE;
-	}
+    result = bind(stSocket, (struct sockaddr*)&server, sizeof(server));
+    if (result == SOCKET_ERROR) 
+    {
+        cerr << "bind() port: " << nPort << " failed: " << WSAGetLastError() << endl;
+        return FALSE;
+    }
 
-	stMreq.imr_multiaddr.s_addr = inet_addr(mcAddr);
-	stMreq.imr_interface.s_addr = INADDR_ANY;
+    stMreq.imr_multiaddr.s_addr = inet_addr(mcAddr);
+    stMreq.imr_interface.s_addr = INADDR_ANY;
 
-	nRet = setsockopt(hSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&stMreq, sizeof(stMreq));
-	if (nRet == SOCKET_ERROR)
-	{
-		cerr << "setsockopt() IP_ADD_MEMBERSHIP address " << mcAddr << " failed, Err: " << WSAGetLastError() << endl;
-		return FALSE;
-	}
+    result = setsockopt(stSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&stMreq, sizeof(stMreq));
+    if (result == SOCKET_ERROR)
+    {
+        cerr << "setsockopt() IP_ADD_MEMBERSHIP address " << mcAddr << " failed: " << WSAGetLastError() << endl;
+        return FALSE;
+    }
 
-	nRet = setsockopt(hSocket, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&mcTTL, sizeof(mcTTL));
-	if (nRet == SOCKET_ERROR)
-	{
-		cerr << "setsockopt() IP_MULTICAST_TTL failed, Err: " << WSAGetLastError() << endl;
-		return FALSE;
-	}
+    result = setsockopt(stSocket, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&mcTTL, sizeof(mcTTL));
+    if (result == SOCKET_ERROR)
+    {
+        cerr << "setsockopt() IP_MULTICAST_TTL failed: " << WSAGetLastError() << endl;
+        return FALSE;
+    }
 
-	fFlag = FALSE;
-	nRet = setsockopt(hSocket, IPPROTO_IP,  IP_MULTICAST_LOOP, (char *)&fFlag, sizeof(fFlag));
-	if (nRet == SOCKET_ERROR)
-	{
-		cerr << "setsockopt() IP_MULTICAST_LOOP failed, Err: " << WSAGetLastError() << endl;
-		return FALSE;
-	}
+    result = setsockopt(stSocket, IPPROTO_IP,  IP_MULTICAST_LOOP, (char *)&flag, sizeof(flag));
+    if (result == SOCKET_ERROR)
+    {
+        cerr << "setsockopt() IP_MULTICAST_LOOP failed: " << WSAGetLastError() << endl;
+        return FALSE;
+    }
 
-	destination.sin_family =      AF_INET;
-	destination.sin_addr.s_addr = inet_addr(mcAddr);
-	destination.sin_port =        htons(nPort);
+    destination.sin_family =      AF_INET;
+    destination.sin_addr.s_addr = inet_addr(mcAddr);
+    destination.sin_port =        htons(nPort);
 
-	dir = getAudioPath();
-	count = populatePlayList(list);
+    dir = getAudioPath();
+    count = populatePlayList(list);
 
-	if (count > 0)
-	{
-		// Open libzplay stream and settings
-		ZPlay * mcStream = CreateZPlay();
-		mcStream->SetSettings(sidSamplerate, 44100); // 44.1K sampling rate
-		mcStream->SetSettings(sidChannelNumber, 2);  // 2 channels
-		mcStream->SetSettings(sidBitPerSample, 16);  // 16 bit sample
-		mcStream->SetSettings(sidBigEndian, 0);      // big endian
+    if (count > 0)
+    {
+        // Open libzplay stream and settings
+        ZPlay * mcStreamPlayer = CreateZPlay();
+        mcStreamPlayer->SetSettings(sidSamplerate, SAMPLERATE);
+        mcStreamPlayer->SetSettings(sidChannelNumber, CHANNELNUM);
+        mcStreamPlayer->SetSettings(sidBitPerSample, BITPERSAMPLE);
+        mcStreamPlayer->SetSettings(sidBigEndian, LITTLEEND);
 
-		for (vector<string>::iterator it = list.begin(); it != list.end(); ++it)
-		{
-			std::streampos begin, end;
-			long int bytesSent = 0,
-				filesize,
-				totalbytesSent = 0;
+        for (vector<string>::iterator it = list.begin(); it != list.end(); ++it)
+        {
+            std::streampos begin, end;
+            long int bytesSent = 0,
+                     filesize,
+                     totalbytesSent = 0;
 
-			string path = dir;
-			string::size_type pos = path.find_last_of("*");
-			path = path.substr(0, pos);
-			path += *it;
+            string path = dir;
+            string::size_type pos = path.find_last_of("*");
+            path = path.substr(0, pos);
+            path += *it;
 
-			begin = fileToSend->tellg();
-			fileToSend->seekg(0, ios::end);
-			end = fileToSend->tellg();
-			fileToSend->seekg(0, ios::beg);
-			filesize = static_cast<long int>(end - begin);
+            fileToSend->open(path, ios::binary);
 
-			fileToSend->open(path, ios::binary);
+            if (!fileToSend->is_open())
+                continue;
 
-			if (!fileToSend->is_open())
-				continue;
+            begin = fileToSend->tellg();
+            fileToSend->seekg(0, ios::end);
+            end = fileToSend->tellg();
+            fileToSend->seekg(0, ios::beg);
+            filesize = static_cast<long int>(end - begin);
 
-			mcSocket->file = fileToSend;
-			mcSocket->mcaddr = destination;
-			mcSocket->socket = hSocket;
-			mcSocket->filesize = filesize;
-			
-			// set up the multicast callback
-			mcStream->SetCallbackFunc(mcCallbackFunc, (TCallbackMessage) (MsgStreamNeedMoreData | MsgWaveBuffer), 
+            mcSocket->file = fileToSend;
+            mcSocket->mcaddr = destination;
+            mcSocket->socket = stSocket;
+            mcSocket->filesize = filesize;
+            
+            // set up the multicast callback
+            mcStreamPlayer->SetCallbackFunc(mcCallbackFunc, (TCallbackMessage) (MsgStreamNeedMoreData | MsgWaveBuffer), 
                                       (void *) mcSocket);
 
             int streamBlock;    // memory block with stream data
-			if (mcStream->OpenStream(1, 1, &streamBlock, 1, sfPCM) == 0)
-			{
-				cerr << "Error in opening a multicast stream: " << mcStream->GetError() << endl;
-				mcStream->Release();
-				return FALSE;
-			}
+            if (mcStreamPlayer->OpenStream(1, 1, &streamBlock, 1, sfPCM) == 0)
+            {
+                cerr << "Error in opening a multicast stream: " << mcStreamPlayer->GetError() << endl;
+                mcStreamPlayer->Release();
+                return FALSE;
+            }
 
             // turn down the volume
-			mcStream->SetMasterVolume(0,0);
+            mcStreamPlayer->SetMasterVolume(0, 0);
 
-            //start streaming
-			mcStream->Play();
+            // start streaming
+            mcStreamPlayer->Play();
 
-			while (TRUE)
-			{
-				TStreamStatus status;
-				mcStream->GetStatus(&status);
-				if (status.fPlay == 0)
-					break; //exit the loop
-			}
+            while (TRUE)
+            {
+                TStreamStatus status;
+                mcStreamPlayer->GetStatus(&status);
+                if (status.fPlay == 0)
+                    break;
+            }
 
-			fileToSend->close();
-		}
+            fileToSend->close();
+        }
 
-		mcStream->Release();
-		free(mcSocket);
-	}
+        mcStreamPlayer->Release();
+        free(mcSocket);
+    }
 
-	return TRUE;
+    return TRUE;
 }
 
 /*------------------------------------------------------------------------------------------------------------------
@@ -750,30 +750,30 @@ DWORD WINAPI mcThread(LPVOID params)
 int  __stdcall  mcCallbackFunc(void* instance, void *user_data, libZPlay::TCallbackMessage message, 
                                unsigned int param1, unsigned int param2)
 {
-	ZPlay* mcStream = (ZPlay*) instance;
-	LPMCSOCKET mcv = (LPMCSOCKET) user_data;
-	char* buffer = new char[STREAMBUFSIZE];
+    ZPlay* mcStreamPlayer = (ZPlay*) instance;
+    LPMCSOCKET udata = (LPMCSOCKET) user_data;
+    char* buffer = new char[MAXBUFSIZE];
 
-	switch (message)
-	{
-		case MsgStreamNeedMoreData:
-			mcv->file->read(buffer, TMPBUFSIZE);
-			//cout << "Read " << mcv->file->gcount() << endl;
-			mcStream->PushDataToStream(buffer, static_cast<unsigned int>(mcv->file->gcount()));
-		break;
+    switch (message)
+    {
+        case MsgStreamNeedMoreData:
+            udata->file->read(buffer, sizeof(buffer));
+            mcStreamPlayer->PushDataToStream(buffer, static_cast<unsigned int>(udata->file->gcount()));
+        break;
 
-		case MsgWaveBuffer:
-			if (sendto(mcv->socket, (const char *) param1, param2, 0,(const SOCKADDR *)& mcv->mcaddr, sizeof(mcv->mcaddr)) < 0)
-			{
-				cerr << "Error in sendto: " << GetLastError();
-				free(mcv);
-				return 1;
-			}
-		break;
-	}
-	
-	delete buffer;
-	return 0;
+        case MsgWaveBuffer:
+            if (sendto(udata->socket, (const char *) param1, param2, 0,(const SOCKADDR *)& udata->mcaddr, 
+                sizeof(udata->mcaddr)) < 0)
+            {
+                cerr << "Error in sendto: " << GetLastError();
+                free(udata);
+                return 1;
+            }
+        break;
+    }
+    
+    delete buffer;
+    return 0;
 }
 
 /*------------------------------------------------------------------------------------------------------------------
@@ -796,15 +796,15 @@ int  __stdcall  mcCallbackFunc(void* instance, void *user_data, libZPlay::TCallb
 ----------------------------------------------------------------------------------------------------------------------*/
 string getAudioPath()
 {
-	char buf[MAX_PATH];
-	string dir;
+    char buf[MAX_PATH];
+    string dir;
 
-	GetModuleFileName(NULL, buf, MAX_PATH);
-	string::size_type pos = string(buf).find_last_of("\\/");
-	dir = string(buf).substr(0, pos);
-	dir += "\\audio\\*";
+    GetModuleFileName(NULL, buf, MAX_PATH);
+    string::size_type pos = string(buf).find_last_of("\\/");
+    dir = string(buf).substr(0, pos);
+    dir += "\\audio\\*";
 
-	return dir;
+    return dir;
 }
 
 /*------------------------------------------------------------------------------------------------------------------
@@ -828,29 +828,29 @@ string getAudioPath()
 ----------------------------------------------------------------------------------------------------------------------*/
 int populatePlayList(vector<string>& list)
 {
-	HANDLE hFind;
-	WIN32_FIND_DATA data;
-	int count = 0;
-	string dir;
+    int count = 0;
+    HANDLE hFind;
+    WIN32_FIND_DATA data;
+    string dir;
 
-	dir = getAudioPath();
-	
-	hFind = FindFirstFile(dir.c_str(), &data);
-	if (hFind != INVALID_HANDLE_VALUE)
-	{
-		do
-		{
-			if (data.cFileName[0] != '.')
-			{
-				count++;
-				list.push_back(data.cFileName);
-			}
-		} while (FindNextFile(hFind, &data));
+    dir = getAudioPath();
+    
+    hFind = FindFirstFile(dir.c_str(), &data);
+    if (hFind != INVALID_HANDLE_VALUE)
+    {
+        do
+        {
+            if (data.cFileName[0] != '.')
+            {
+                count++;
+                list.push_back(data.cFileName);
+            }
+        } while (FindNextFile(hFind, &data));
 
-		FindClose(hFind);
-	}
+        FindClose(hFind);
+    }
 
-	return count;
+    return count;
 }
 
 /*------------------------------------------------------------------------------------------------------------------

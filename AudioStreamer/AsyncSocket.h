@@ -13,7 +13,7 @@
 #ifndef ASYNCSOCKET_H
 #define ASYNCSOCKET_H
 
-#include "common.h"
+#include "../Common/common.h"
 
 // function prototypes
 SOCKET createListenSocket(WSADATA * wsadata, int protocol, SOCKADDR_IN * udpaddr = 0);

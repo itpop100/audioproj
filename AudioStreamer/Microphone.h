@@ -14,16 +14,15 @@
 #ifndef MICROPHONE_H
 #define MICROPHONE_H
 
-#include "common.h"
 #include "AsyncSocket.h"
-#include "libzplay.h"
+#include "../Common/common.h"
+#include "../Common/libzplay.h"
 
 // microphone socket struct
 typedef struct 
 {
-	SOCKET micsocket;
-	SOCKADDR_IN micaddr;
-
+    SOCKET micsocket;
+    SOCKADDR_IN micaddr;
 } MICSOCKET, *LPMICSOCKET;
 
 // function prototypes
