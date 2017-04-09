@@ -128,7 +128,6 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="audio.ico" />
-    <Image Include="wave.gif" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\Common\libzplay.lib" />

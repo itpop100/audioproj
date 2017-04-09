@@ -3,9 +3,9 @@
 --
 -- DATE:        March 10, 2017
 --
--- DESIGNER:    
+-- DESIGNER:    Fred Yang, Maitiu Morton, Isaac Morneau
 --
--- PROGRAMMER:  
+-- PROGRAMMER:  Fred Yang, Maitiu Morton, Isaac Morneau
 --
 -- NOTES:
 -- This header file includes the required definitions and function prototypes for client GUI

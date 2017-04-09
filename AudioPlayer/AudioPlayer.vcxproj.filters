@@ -45,9 +45,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="wave.gif">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="audio.ico">
       <Filter>Resource Files</Filter>
     </Image>

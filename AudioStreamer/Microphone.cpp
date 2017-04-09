@@ -1,3 +1,24 @@
+/*------------------------------------------------------------------------------------------------------------------
+-- SOURCE FILE: Microphone.cpp
+--
+-- PROGRAM:     AudioStreamer
+--
+-- FUNCTIONS:
+--              bool startMicChat()
+--              int __stdcall micCallbackFunc(void * instance, void * user_data, TCallbackMessage message, 
+--                                            unsigned int param1, unsigned int param2)
+--
+-- DATE:        March 10, 2017
+--
+-- REVISIONS:   April 8, 2017
+--
+-- DESIGNER:    Fred Yang
+--
+-- PROGRAMMER:  Fred Yang
+--
+-- NOTES:
+-- Implements microphone 2-way chatting.
+----------------------------------------------------------------------------------------------------------------------*/
 #include "Microphone.h"
 
 using namespace std;
@@ -14,11 +35,11 @@ ZPlay* micPlayer;
 --
 -- DATE:        March 8, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   int startMicChat()
 --
@@ -26,7 +47,7 @@ ZPlay* micPlayer;
 --
 -- NOTES:
 -- This function will start microphone chat session.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 bool startMicChat()
 {
     WSADATA wsadata;
@@ -101,8 +122,8 @@ bool startMicChat()
         // If stream is not playing or stream is closed, position is 0.
         TStreamTime pos;
         micPlayer->GetPosition(&pos);
-        /*cout << "Pos: " << pos.hms.hour << ":" << pos.hms.minute << ":"
-             << pos.hms.second << "." << pos.hms.millisecond << endl;*/
+        cout << "Pos: " << pos.hms.hour << ":" << pos.hms.minute << ":"
+             << pos.hms.second << "." << pos.hms.millisecond << endl;
     }
 
     micPlayer->Release();
@@ -114,11 +135,11 @@ bool startMicChat()
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   int __stdcall micCallbackFunc(void* instance, void* user_data, TCallbackMessage message, 
 --              unsigned int param1, unsigned int param2)

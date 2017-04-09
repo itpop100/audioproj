@@ -1,0 +1,111 @@
+---------------------------------------------------------------
+             Audio Streamer Project - Manifest File
+---------------------------------------------------------------
+
+List all files required for each component of the project.
+Refer to design documentation section 4 - Listings for details.
+
+---------------------------------------------------------------
+                Audio Streamer - Server Side
+---------------------------------------------------------------
+All files of Audio Streamer reside in AudioStream folder.
+
+/
+- AudioStreamer       (AudioStream folder)
+   |
+    AsyncSocket.cpp   (AsyncSocket wrapper)
+   |
+    AsyncSocket.h     (AsyncSocket header file)
+   |
+    audio.ico         (audio icon)
+   |
+    AudioStreamer.cpp (AudioStreamer source file)
+   |
+    AudioStreamer.h   (AudioStreamer header file)
+   |
+    AudioStreamer.rc              (Windows generated resource file)
+   |
+    AudioStreamer.vcxproj         (Visual studio project file)
+   | 
+    AudioStreamer.vcxproj.filters (Visual studio project file)
+   |
+    AudioStreamer.vcxproj.user    (Visual studio project file)
+   |
+    Microphone.cpp   (microphone source file)
+   |
+    Microphone.h     (microphone header file)
+   |
+    resource.h       (resource header file)
+
+
+---------------------------------------------------------------
+                Audio Player - Client Side
+---------------------------------------------------------------
+All files of Audio Streamer reside in AudioPlayer folder.
+
+/
+- AudioPlayer        (AudioPlayer folder)
+    |
+     Audio.ico       (AudioPlayer icon)
+    |
+     AudioPlayer.cpp (AudioPlayer source file)
+    |
+     AudioPlayer.h   (AudioPlayer header file)
+    |
+     AudioPlayer.rc  (Windows generated resource file)
+    |
+     AudioPlayer.vcxproj         (Visual studio project file)
+    |
+     AudioPlayer.vcxproj.filters (Visual studio project file)
+    |
+     AudioPlayer.vcxproj.user    (Visual studio project file)
+    |
+     Main.cpp   (main entry source file)
+    |
+     Main.h     (main header file)
+    |
+     resource.h (resource header file)
+
+
+---------------------------------------------------------------
+                Solution Files & Executables
+---------------------------------------------------------------
+Solution file, README, and MANIFEST text files reside in the 
+root folder. Common files and executables reside in Common folder
+and Release folder, respectively.
+
+/
+- AudioStreamer.sln (Project solution file)
+- Manifest.txt      (manifest file)
+- README.md         (readme file)
+|
+ -Common         (Common folder)
+   |
+    common.h     (Common header file)
+   |
+    libzplay.dll (third-party libzplay dynamic link library)
+   |
+    libzplay.h   (third-party libzplay header file)
+   |
+    libzplay.lib (third-party libzplay static link library)
+|
+  -Release       (Release folder)
+      |
+      -audio     (audio folder)
+         |
+         bird01.mp3
+         |
+         bird02.mp3
+         |
+         push.wav
+         |
+         trip.ogg
+      |
+       AudioPlayer.exe   (AudioPlayer execuatable)
+      |
+       AudioStreamer.exe (AudioStreamer executable)
+
+
+
+
+

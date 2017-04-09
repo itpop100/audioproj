@@ -3,33 +3,37 @@
 --
 -- PROGRAM:         AudioPlayer
 --
--- FUNCTIONS:       bool AudioPlayer::dispatchWSASendRequest(LPSOCKETDATA data) 
---                  bool AudioPlayer::dispatchWSARecvRequest(LPSOCKETDATA data)
---                  bool AudioPlayer::runClient(WSADATA* wsadata, const char* hostname, const int port)
---                  void AudioPlayer::dispatchRecv()
---                  void AudioPlayer::freeData(LPSOCKETDATA data)
---                  void AudioPlayer::dispatchSend(string usrData)
---                  void AudioPlayer::sendComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
---                  void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
---                  void CALLBACK AudioPlayer::runSendComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
---                  void CALLBACK AudioPlayer::runRecvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
---                  DWORD WINAPI AudioPlayer::runDLThread(LPVOID params)
---                  DWORD AudioPlayer::dlThread(LPVOID params)
---                  DWORD WINAPI AudioPlayer::runULThread(LPVOID params)
---                  DWORD AudioPlayer::ulThread(LPVOID params)
---                  LPSOCKETDATA AudioPlayer::allocData(SOCKET socketFD)
---                  SOCKET AudioPlayer::createTCPClient(WSADATA* wsaData, const char* hostname, const int port)
+-- FUNCTIONS:       bool AudioPlayer::dispatchWSASendRequest(LPSOCKETDATA data);
+--                  bool AudioPlayer::dispatchWSARecvRequest(LPSOCKETDATA data);
+--                  bool AudioPlayer::runClient(WSADATA* wsadata, const char* hostname, const int port);
+--                  void AudioPlayer::dispatchRecv();
+--                  void AudioPlayer::freeData(LPSOCKETDATA data);
+--                  void AudioPlayer::dispatchSend(string usrData);
+--                  DWORD WINAPI AudioPlayer::runDLThread(LPVOID params);
+--                  DWORD AudioPlayer::dlThread(LPVOID params);
+--                  DWORD WINAPI AudioPlayer::runULThread(LPVOID params);
+--                  DWORD AudioPlayer::ulThread(LPVOID params);
+--                  LPSOCKETDATA AudioPlayer::allocData(SOCKET socketFD);
+--                  SOCKET AudioPlayer::createTCPClient(WSADATA* wsaData, const char* hostname, const int port);
+--                  void AudioPlayer::sendComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, 
+--                                                  DWORD flags);
+--                  void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, 
+--                                                  DWORD flags);
+--                  void CALLBACK AudioPlayer::runSendComplete (DWORD error, DWORD bytesTransferred, 
+--                                                              LPWSAOVERLAPPED overlapped, DWORD flags);
+--                  void CALLBACK AudioPlayer::runRecvComplete (DWORD error, DWORD bytesTransferred, 
+--                                                              LPWSAOVERLAPPED overlapped, DWORD flags);
 -- 
 -- DATE:            March 8, 2017
 --
--- REVISIONS: 
+-- REVISIONS:       April 8, 2017
 --
--- DESIGNER:        
+-- DESIGNER:        Fred Yang, Isaac Morneau, Maitiu Morton, John Agapeyev
 --
--- PROGRAMMER:      
+-- PROGRAMMER:      Fred Yang, Isaac Morneau, Maitiu Morton, John Agapeyev
 --
 -- NOTES: 
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 
 #include "AudioPlayer.h"
 
@@ -44,11 +48,11 @@ DWORD totalBytesSent;
 --
 -- DATE:        March 8, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   SOCKET createTCPClient(WSADATA* wsaData, const char* hostname, const int port) 
 --              wsaData: pointer to WSADATA struct
@@ -60,7 +64,7 @@ DWORD totalBytesSent;
 -- NOTES:
 -- Called to create a TCP async socket
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 SOCKET AudioPlayer::createTCPClient(WSADATA* wsaData, const char* hostname, const int port) 
 {
     // The highest version of Windows Sockets spec that the caller can use
@@ -105,11 +109,11 @@ SOCKET AudioPlayer::createTCPClient(WSADATA* wsaData, const char* hostname, cons
 --
 -- DATE:        March 8, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   bool runClient(WSADATA* wsadata, const char* hostname, const int port)
 --              wsaData: pointer to WSADATA struct
@@ -121,7 +125,7 @@ SOCKET AudioPlayer::createTCPClient(WSADATA* wsaData, const char* hostname, cons
 -- NOTES:
 -- Called to create a TCP client and connect to the server if that call succeeded.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 bool AudioPlayer::runClient(WSADATA* wsadata, const char* hostname, const int port)
 {
     //create a socket
@@ -134,9 +138,12 @@ bool AudioPlayer::runClient(WSADATA* wsadata, const char* hostname, const int po
             MessageBox(NULL, "Can't connect to server", "Connection Error", MB_ICONERROR);
             return FALSE;
         }
+
         currentState = WAITFORCOMMAND;
+
         return TRUE;
     }
+
     return FALSE;
 }
 
@@ -145,11 +152,11 @@ bool AudioPlayer::runClient(WSADATA* wsadata, const char* hostname, const int po
 --
 -- DATE:        March 9, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   bool dispatchWSARecvRequest(LPSOCKETDATA data)
 --              data: pointer to a LPSOCKETDATA struct which contains the information needed for a WSARecv
@@ -169,7 +176,8 @@ bool AudioPlayer::dispatchWSARecvRequest(LPSOCKETDATA data)
     int error;
     char stats[MAX_PATH] = "";
 
-    if(data)
+    // data retrieved
+    if (data)
     {
         // create a client request context which includes a client and a data structure
         REQUESTCONTEXT* rc = (REQUESTCONTEXT*) malloc(sizeof(REQUESTCONTEXT));
@@ -190,9 +198,9 @@ bool AudioPlayer::dispatchWSARecvRequest(LPSOCKETDATA data)
             }
             return TRUE;
         }
+
         freeData(data);
         free(rc);
-        return FALSE;
     }
 
     return FALSE;
@@ -203,13 +211,14 @@ bool AudioPlayer::dispatchWSARecvRequest(LPSOCKETDATA data)
 --
 -- DATE:        March 8, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Maitiu Morton
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Maitiu Morton
 --
--- INTERFACE:   void CALLBACK runRecvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
+-- INTERFACE:   void CALLBACK runRecvComplete (DWORD error, DWORD bytesTransferred, 
+--                                             LPWSAOVERLAPPED overlapped, DWORD flags)
 --              error: indicates if there were any errors in the async receive call
 --              bytesTransferred: number of bytes received
 --              overlapped: the overlapped structure used to make the async recv call
@@ -220,7 +229,7 @@ bool AudioPlayer::dispatchWSARecvRequest(LPSOCKETDATA data)
 -- NOTES:
 -- Called whenever an async recv request was completed.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void CALLBACK AudioPlayer::runRecvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
 {
     REQUESTCONTEXT* rc = (REQUESTCONTEXT*) overlapped->hEvent;
@@ -233,11 +242,11 @@ void CALLBACK AudioPlayer::runRecvComplete (DWORD error, DWORD bytesTransferred,
 --
 -- DATE:        March 9, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Maitiu Morton, Fred Yang
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Maitiu Morton, Fred Yang
 --
 -- INTERFACE:   void recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
 --              error: indicates if there were any errors in the async receive call
@@ -251,7 +260,7 @@ void CALLBACK AudioPlayer::runRecvComplete (DWORD error, DWORD bytesTransferred,
 -- Executed after each async recv call is completed. It extracts the received data from
 -- the data buffers and then changes the client state.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
 {
     REQUESTCONTEXT* rc = (REQUESTCONTEXT*) overlapped->hEvent;
@@ -284,7 +293,7 @@ void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
 
     switch(clnt->currentState)
     {
-    case WAITFORSTREAM:
+    case WAITFORSTREAM: // wait for streaming approval
         if(iss >> reqType && iss >> fileSize)
         {
             clnt->dlFileSize = fileSize;
@@ -328,7 +337,7 @@ void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
         }
         break;
 
-    case WAITFORLIST:
+    case WAITFORLIST:   // wait for listing approval
         {
             cachedPlayList.append(tmp);
             cachedPlayList.erase(0, cachedPlayList.find_first_not_of(' '));
@@ -340,7 +349,7 @@ void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
 
         break;
 
-    case WAITFORDOWNLOAD:   //after download request was sent in dlThread
+    case WAITFORDOWNLOAD:   // after download request was sent in dlThread
         if(iss >> reqType && iss >> fileSize)
         {
             clnt->dlFileSize = fileSize;
@@ -357,7 +366,7 @@ void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
 
         break;
 
-    case WAITFORUPLOAD:	// after upload request was sent in ulThread
+    case WAITFORUPLOAD: // after upload request was sent in ulThread
         if(iss >> reqType && getline(iss, extra)) { //get request type and file name
             // trim leading white space in file name
             extra.erase(0, extra.find_first_not_of(' ')); 
@@ -374,7 +383,7 @@ void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
 
         break;
 
-    case DOWNLOADING:
+    case DOWNLOADING:   // downloading
         if(clnt->downloadedAmount >= clnt->dlFileSize)  // the entire file bytes received
         {
             clnt->currentState = WAITFORCOMMAND;    // set state to waiting for command
@@ -389,7 +398,7 @@ void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
         }
         break;
 
-    case STREAMING:
+    case STREAMING: // streaming / playing
         if(clnt->downloadedAmount >= clnt->dlFileSize)
         {
             clnt->currentState = WAITFORCOMMAND;
@@ -412,6 +421,7 @@ void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
         break;
     }
 
+    // free up data
     freeData(data);
 
 }
@@ -421,11 +431,11 @@ void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   TStreamFormat parseFileFormat(const string filename)
 --              const string filename: file name specified
@@ -435,7 +445,7 @@ void AudioPlayer::recvComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
 -- NOTES:
 -- This parses a filename (string) and detects what format it is based on the file extension.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 TStreamFormat parseFileFormat(const string filename)
 {
     string format;
@@ -454,11 +464,11 @@ TStreamFormat parseFileFormat(const string filename)
 --
 -- DATE:        March 9, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   bool dispatchWSASendRequest(LPSOCKETDATA data)
 --              data: pointer to a LPSOCKETDATA struct which contains the information needed for a WSARecv,
@@ -470,7 +480,7 @@ TStreamFormat parseFileFormat(const string filename)
 -- This function posts a WSASend (Async Send call) request specifying a call back function to be 
 -- executed upon the completion of send call
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 bool AudioPlayer::dispatchWSASendRequest(LPSOCKETDATA data)
 {
     DWORD flag = 0;
@@ -490,9 +500,13 @@ bool AudioPlayer::dispatchWSASendRequest(LPSOCKETDATA data)
     {
         return TRUE;
     }
-    freeData(data);
-    free(rc);
-    return FALSE;
+    else
+    {
+        freeData(data);
+        free(rc);
+        return FALSE;
+    }
+
 }
 
 /*------------------------------------------------------------------------------------------------------------------
@@ -500,11 +514,11 @@ bool AudioPlayer::dispatchWSASendRequest(LPSOCKETDATA data)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang, John Agapeyev
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang, John Agapeyev
 --
 -- INTERFACE:   void CALLBACK runSendComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
 --              error: indicates if there were any errors in the async receive call
@@ -517,7 +531,7 @@ bool AudioPlayer::dispatchWSASendRequest(LPSOCKETDATA data)
 -- NOTES:
 -- Called whenever an async send request was completed.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void CALLBACK AudioPlayer::runSendComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
 {
     REQUESTCONTEXT* rc = (REQUESTCONTEXT*) overlapped->hEvent;
@@ -530,11 +544,11 @@ void CALLBACK AudioPlayer::runSendComplete (DWORD error, DWORD bytesTransferred,
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang, John Agapeyev
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang, John Agapeyev
 --
 -- INTERFACE:   void sendComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
 --              error: indicates if there were any errors in the async receive call
@@ -547,7 +561,7 @@ void CALLBACK AudioPlayer::runSendComplete (DWORD error, DWORD bytesTransferred,
 -- NOTES:
 -- Executed after each async send call is completed to send the data and then change the client state.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void AudioPlayer::sendComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLAPPED overlapped, DWORD flags)
 {
     REQUESTCONTEXT* rc = (REQUESTCONTEXT*) overlapped->hEvent;
@@ -602,11 +616,11 @@ void AudioPlayer::sendComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang, John Agapeyev
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang, John Agapeyev
 --
 -- INTERFACE:   void dispatchSend(string usrData)
 --              data: the user data to send
@@ -617,7 +631,7 @@ void AudioPlayer::sendComplete (DWORD error, DWORD bytesTransferred, LPWSAOVERLA
 -- This function makes an async Send request and then puts the thread in an alertable
 -- state, meaning the same thread will handle the remaining stuff till completion.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void AudioPlayer::dispatchSend(string usrData)
 {
     SOCKETDATA* data = allocData(connectSocket_);
@@ -626,7 +640,8 @@ void AudioPlayer::dispatchSend(string usrData)
     memcpy(data->databuf, usrData.c_str(), usrData.size());
     data->wsabuf.len = usrData.size();
 
-    if(data)
+    // data retrieved
+    if (data)
     {
         dispatchWSASendRequest(data);
     }
@@ -641,11 +656,11 @@ void AudioPlayer::dispatchSend(string usrData)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang, John Agapeyev
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang, John Agapeyev
 --
 -- INTERFACE:   void AudioPlayer::dispatchRecv()
 --
@@ -655,7 +670,7 @@ void AudioPlayer::dispatchSend(string usrData)
 -- This function makes an async Recv request and then puts the thread in an alertable
 -- state, meaning the same thread will handle the remaining stuff till completion.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void AudioPlayer::dispatchRecv()
 {
     SOCKETDATA* data = allocData(connectSocket_);
@@ -675,11 +690,11 @@ void AudioPlayer::dispatchRecv()
 --
 -- DATE:        March 12, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 7, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Isaac Morneau, Maitiu Morton
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Isaac Morneau, Maitiu Morton
 --
 -- INTERFACE:   DWORD WINAPI runDLThread(LPVOID params)
 --              params: points to the client object
@@ -689,7 +704,7 @@ void AudioPlayer::dispatchRecv()
 -- NOTES:
 -- Called to run the download thread.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 DWORD WINAPI AudioPlayer::runDLThread(LPVOID params)
 {
     AudioPlayer* clnt = (AudioPlayer*) params;
@@ -701,11 +716,11 @@ DWORD WINAPI AudioPlayer::runDLThread(LPVOID params)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Isaac Morneau, Maitiu Morton
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Isaac Morneau, Maitiu Morton
 --
 -- INTERFACE:   DWORD dlThread(LPVOID params)
 --              params: points to the client object
@@ -715,7 +730,7 @@ DWORD WINAPI AudioPlayer::runDLThread(LPVOID params)
 -- NOTES:
 -- A thread posts requests to receive data off the socket, while the client is in download mode.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 DWORD AudioPlayer::dlThread(LPVOID params)
 {
     char tm[MAX_PATH] = "";
@@ -726,6 +741,7 @@ DWORD AudioPlayer::dlThread(LPVOID params)
 
     AudioPlayer* clnt = (AudioPlayer*) params;
 
+    // build user request packet
     userRequest += to_string(REQDOWNLOAD) + " ";
     userRequest += clnt->currentAudioFile;
     userRequest += "\n";
@@ -733,6 +749,7 @@ DWORD AudioPlayer::dlThread(LPVOID params)
     clnt->currentState = SENTDLREQUEST;
     clnt->dispatchSend(userRequest);
 
+    // calculate elapse time
     start = clock();
 
     while(TRUE)
@@ -747,6 +764,7 @@ DWORD AudioPlayer::dlThread(LPVOID params)
         dispatchRecv();
     }
 
+    // status rendering
     elapsed = clock() - start;
     sprintf(tm, "Time elapsed: %ld ms", elapsed);
     sprintf(prog, "Download done.");
@@ -761,11 +779,11 @@ DWORD AudioPlayer::dlThread(LPVOID params)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Maitiu Morton, Isaac Morneau
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Maitiu Morton, Isaac Morneau
 --
 -- INTERFACE:   DWORD runSTThread(LPVOID params)
 --              params: points to the client object
@@ -775,7 +793,7 @@ DWORD AudioPlayer::dlThread(LPVOID params)
 -- NOTES:
 -- Called to run the streaming thread.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 DWORD WINAPI AudioPlayer::runSTThread(LPVOID params)
 {
     AudioPlayer* clnt = (AudioPlayer*) params;
@@ -787,11 +805,11 @@ DWORD WINAPI AudioPlayer::runSTThread(LPVOID params)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Maitiu Morton
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Maitiu Morton
 --
 -- INTERFACE:   DWORD stThread(LPVOID params)
 --              params: points to the client object
@@ -801,7 +819,7 @@ DWORD WINAPI AudioPlayer::runSTThread(LPVOID params)
 -- NOTES:
 -- A thread posts requests to receive data off the socket, while the client is in streaming mode.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 DWORD AudioPlayer::stThread(LPVOID params)
 {
     char tm[MAX_PATH] = "";
@@ -847,11 +865,11 @@ DWORD AudioPlayer::stThread(LPVOID params)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   DWORD WINAPI runULThread(LPVOID params)
 --              params: points to the client object
@@ -860,8 +878,8 @@ DWORD AudioPlayer::stThread(LPVOID params)
 --
 -- NOTES:
 -- Called to run the upload thread.
---				
-----------------------------------------------------------------------------------------------------------------------*/
+--
+------------------------------------------------------------------------------------------------------------------*/
 DWORD WINAPI AudioPlayer::runULThread(LPVOID params)
 {
     AudioPlayer* clnt = (AudioPlayer*) params;
@@ -873,11 +891,11 @@ DWORD WINAPI AudioPlayer::runULThread(LPVOID params)
 --
 -- DATE:        March 12, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   DWORD ulThread(LPVOID params)
 --              params: points to the client object
@@ -888,7 +906,7 @@ DWORD WINAPI AudioPlayer::runULThread(LPVOID params)
 -- While the client is in upload state, it reads data from the file and sends it to the server
 -- by posting async send calls
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 DWORD AudioPlayer::ulThread(LPVOID params)
 {
     AudioPlayer* clnt = (AudioPlayer*) params;
@@ -897,6 +915,7 @@ DWORD AudioPlayer::ulThread(LPVOID params)
     string userRequest;
     ostringstream oss;
 
+    // open and read data from file
     clnt->uploadFileStream.open(clnt->currentAudioFile, ios::binary);
     streampos begin, end;
     begin = clnt->uploadFileStream.tellg();
@@ -907,10 +926,11 @@ DWORD AudioPlayer::ulThread(LPVOID params)
     oss << REQUPLOAD << " " << clnt->ulFileSize << clnt->currentAudioFile << "\n";
     userRequest = oss.str();
 
+    // send upload request
     clnt->currentState = SENTULREQUEST;
     clnt->dispatchSend(userRequest);
 
-    while(TRUE)
+    while (TRUE)
     {
         if (!uploadFileStream.is_open())
             return FALSE;
@@ -923,6 +943,7 @@ DWORD AudioPlayer::ulThread(LPVOID params)
         bytesRead = 0;
         data.clear();
 
+        // read data from the stream
         clnt->uploadFileStream.read(tmp, MAXBUFSIZE);
         if((bytesRead = clnt->uploadFileStream.gcount()) > 0)
         {
@@ -937,10 +958,13 @@ DWORD AudioPlayer::ulThread(LPVOID params)
         {
             clnt->currentState = WAITFORCOMMAND;
             break;
+        
         }
     }
+    
     sprintf(prog, "Upload done.");
     MessageBox(NULL, "Upload done", "Upload", MB_ICONINFORMATION);
+
     return TRUE;
 }
 
@@ -949,11 +973,11 @@ DWORD AudioPlayer::ulThread(LPVOID params)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang, Maitiu Morton
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang, Maitiu Morton
 --
 -- INTERFACE:   LPSOCKETDATA allocData(SOCKET socket)
 --              SOCKET socket: the socket specified
@@ -963,7 +987,7 @@ DWORD AudioPlayer::ulThread(LPVOID params)
 -- NOTES:
 -- This function is used to safely allocate memory for a LPSOCKETDATA type variable.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 LPSOCKETDATA AudioPlayer::allocData(SOCKET socket)
 {
     LPSOCKETDATA data = NULL;
@@ -988,11 +1012,11 @@ LPSOCKETDATA AudioPlayer::allocData(SOCKET socket)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Maitiu Morton
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Maitiu Morton
 --
 -- INTERFACE:   void freeData(LPSOCKETDATA data)
 --              data: pointer to a LPSOCKETDATA struct that contain the information needed to 
@@ -1003,10 +1027,10 @@ LPSOCKETDATA AudioPlayer::allocData(SOCKET socket)
 -- NOTES:
 -- This function is used to safely free the memory block that was allocated for the 
 -- LPSOCKETDATA struct.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void AudioPlayer::freeData(LPSOCKETDATA data)
 {
-    if(data)
+    if (data)
     {
         delete data;
     }
