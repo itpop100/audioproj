@@ -17,11 +17,11 @@
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:    
+-- DESIGNER:    Fred Yang, John Agapeyev, Isaac Morneau, Maitiu Morton
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Fred Yang, John Agapeyev, Isaac Morneau, Maitiu Morton
 --
 -- NOTES:
 -- The project uses libZPlay multimedia library. libZplay is one for playing mp3, mp2, mp1, ogg, flac, ac3, aac, 
@@ -30,7 +30,7 @@
 -- To link the libzplay.lib, right click project Porperties, then go to configuration properties>linker>input,
 -- add "libzplay.lib" in the field "additional dependencies". 
 -- libzplay.dll must also be placed into your windows/system32 and windows/syswow64.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 
 #include "AudioStreamer.h"
 
@@ -42,11 +42,11 @@ using namespace libZPlay;
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:    John Agapeyev, Fred Yang
 --
--- PROGRAMMER:
+-- PROGRAMMER:  John Agapeyev, Fred Yang
 --
 -- INTERFACE:   int main(int argc, char* argv[])
 --
@@ -55,7 +55,7 @@ using namespace libZPlay;
 -- NOTES:
 -- Main entry for the server side.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 int main(int argc, char* argv[])
 {
     string title = "Comm Audio Streamer v1.0";
@@ -94,11 +94,11 @@ int main(int argc, char* argv[])
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    John Agapeyev
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  John Agapeyev
 --
 -- INTERFACE:   DWORD WINAPI listenThread(LPVOID params)
 --              LPVOID params: points to the client socket
@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
 -- NOTES: 
 -- Thread that listens for new client connection requests. It spawns a new thread to serve the client
 -- once the client connected successfully.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 
 DWORD WINAPI listenThread(LPVOID params)
 {
@@ -153,21 +153,21 @@ DWORD WINAPI listenThread(LPVOID params)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   DWORD WINAPI listenRequest(LPVOID params)
---			    LPVOID params: points to client socket
+--              LPVOID params: points to client socket
 --
 -- RETURNS:     TRUE on success, FALSE on failure
 --
 -- NOTES: 
 -- This function listens for the connection requests from clients. Calls decodeRequest to parse the request received 
 -- before handle it.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 DWORD WINAPI listenRequest(LPVOID params)
 {
     SOCKET clntSocket = *((SOCKET*) params);
@@ -184,6 +184,7 @@ DWORD WINAPI listenRequest(LPVOID params)
         req = request;
         bytesToRead = MAXBUFSIZE;
 
+        // continuously handle bytes received
         while ((bytesReceived = recv(clntSocket, req, bytesToRead, 0)) > 0)
         {
             req += bytesReceived;
@@ -193,6 +194,7 @@ DWORD WINAPI listenRequest(LPVOID params)
                 break;
         }
 
+        // no bytes received
         if (bytesReceived < 0)
         {
             if (GetLastError() == WSAECONNRESET)
@@ -215,6 +217,7 @@ DWORD WINAPI listenRequest(LPVOID params)
         if (newState == STATEERR)
             break;
 
+        // call handleRequest
         handleRequest(newState, clntSocket, fileName, fileSize);
     }
 
@@ -227,24 +230,23 @@ DWORD WINAPI listenRequest(LPVOID params)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    John Agapeyev
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  John Agapeyev
 --
 -- INTERFACE:   ServerState decodeRequest(char* request, string& fileName, DWORD& fileSize)
---				request - the request packet to parse
---				fileName - the name of the file
---				fileSize - the size of the file
---				
+--              request - the request packet to parse
+--              fileName - the name of the file
+--              fileSize - the size of the file
 --
 -- RETURNS: return ServerState which will indicate one of the specified ServerStates (STREAMING, DOWNLOADING, etc.),
---			return STATEERR on failure.
+--          return STATEERR on failure.
 --
 -- NOTES: 
 -- This function parses a request and returns the current state of the server.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 ServerState decodeRequest(char* request, string& fileName, DWORD& fileSize)
 {
     stringstream ss(request);
@@ -254,31 +256,32 @@ ServerState decodeRequest(char* request, string& fileName, DWORD& fileSize)
     if (ss >> reqType)
     cout << getCommand(reqType) << ">>>>>";
 
+    // handle various types of requests
     switch (reqType) {
-    case REQLIST:
+    case REQLIST:   // list request
         state = STATELIST;
         break;
-    case REQSTREAM:
+    case REQSTREAM: // streaming request
         state = STATESTREAMING;
         getline(ss, fileName);
         cout << fileName << endl;
         break;
-    case REQDOWNLOAD:
+    case REQDOWNLOAD: // download request
         state = STATEDOWNLOADING;
         getline(ss, fileName);
         cout << fileName << endl;
         break;
-    case REQUPLOAD:
+    case REQUPLOAD:  // upload request
         state = STATEUPLOADING;
         ss >> fileSize;
         getline(ss, fileName);
         cout << fileName << " (" << fileSize << " b)" << endl;
         break;
-    case REQMICCHAT:
+    case REQMICCHAT: // microphone chat request
         state = STATEMICCHATTING;
         cout << "Starting 2 way chatting" << endl;
         break;
-    case REQMULTICAST:
+    case REQMULTICAST: // join multicast group request
         state = STATEMULTICASTING;
         cout << "Put client on the multicast channel" << endl;
         break;
@@ -295,44 +298,45 @@ ServerState decodeRequest(char* request, string& fileName, DWORD& fileSize)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Fred Yang
 --
--- INTERFACE:   void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fileName, DWORD fileSize)
---				currentState - the current state of the server
---				clntSocket - the socket of the client to send
---				fileName - the name of the file being transferred
---				fileSize - size of the file being transferred
+-- INTERFACE:   void handleRequest(const ServerState& currentState, SOCKET clntSocket, 
+--                                 string fileName, DWORD fileSize)
+--              currentState - the current state of the server
+--              clntSocket - the socket of the client to send
+--              fileName - the name of the file being transferred
+--              fileSize - size of the file being transferred
 --
 -- RETURNS:     void
 --
 -- NOTES:   
 -- This function keeps track of the current and previous server state, then executes the steps to handle the current
 -- request.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fileName, DWORD fileSize)
 {
-    char*			tmp;
-    int				bytesSent = 0,          // bytes sent
+    char*           tmp;
+    int             bytesSent = 0,          // bytes sent
                     bytesReceived = 0;      // bytes received
-    int				totalbytesSent	= 0,    // total bytes sent
+    int             totalbytesSent = 0,     // total bytes sent
                     totalbytesReceived = 0; // total bytes received
-    string			line;                   // line to hold the file name
-    ifstream		fileToSend;             // file read stream
-    ofstream		fileReceived;           // file write stream
-    streamsize		bytesRead;              // bytes to read
-    vector<string>	list;                   // play list
-    int				count;                  // number of songs
+    string          line;                   // line to hold the file name
+    ifstream        fileToSend;             // file read stream
+    ofstream        fileReceived;           // file write stream
+    streamsize      bytesRead;              // bytes to read
+    vector<string>  list;                   // play list
+    int             count;                  // number of songs
     DWORD           fsize = 0;
     ostringstream oss;
     streampos begin, end;
 
     switch (currentState)
     {
-        case STATELIST:
+        case STATELIST:  // listing
             count = populatePlayList((vector<string>&)list);
 
             if (count > 0)
@@ -350,13 +354,13 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
                 }
             }
 
-            // send EOT
+            // send EOT denoting end of the list
             line = EOT;
             send(clntSocket, line.c_str(), line.size(), 0);
             cout << "Play list sent" << endl;
             break;
 
-        case STATESTREAMING:
+        case STATESTREAMING: // streaming
             // open the audio file
             fileToSend.open(getAudioPath().substr(0,getAudioPath().size()-1).insert(getAudioPath().size()-1,
                             fileName.substr(1,fileName.size())), ios::binary);
@@ -392,6 +396,7 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
                 bytesRead = 0;
                 fileToSend.read(tmp, DATABUFSIZE);
                 
+                // send data to the socket
                 if((bytesRead = fileToSend.gcount()) > 0)
                 {
                     line.append(tmp, static_cast<unsigned int>(bytesRead));
@@ -421,7 +426,7 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
             delete[] tmp;
             break;
 
-        case STATEDOWNLOADING:
+        case STATEDOWNLOADING: // downloading
             // open the audio file
             fileToSend.open(getAudioPath().substr(0,getAudioPath().size()-1).insert(getAudioPath().size()-1,
                             fileName.substr(1,fileName.size())), ios::binary);
@@ -455,6 +460,7 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
                 bytesRead = 0;
                 fileToSend.read(tmp, MAXBUFSIZE);
                 
+                // send data to the socket
                 if((bytesRead = fileToSend.gcount()) > 0)
                 {
                     line.append(tmp, static_cast<unsigned int>(bytesRead));
@@ -484,7 +490,7 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
             delete[] tmp;
             break;
 
-        case STATEUPLOADING:
+        case STATEUPLOADING: // uploading
             cout << "Uploading..." << endl;
             cout << "File size: " << fsize << endl;
 
@@ -508,6 +514,7 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
                 tmp = new char[MAXBUFSIZE];
                 memset(tmp, 0, MAXBUFSIZE);
 
+                // read data from the socket
                 if (((bytesReceived = recv(clntSocket, tmp, MAXBUFSIZE, 0)) == 0) || (bytesReceived == -1))
                 {
                     cerr << "recv failed with error " << GetLastError() << endl;
@@ -517,6 +524,7 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
                     return;
                 }
 
+                // save the data received into a file
                 fileReceived.write(tmp, bytesReceived);
                 totalbytesReceived += bytesReceived;
                 cout << "Bytes received: " << bytesReceived << endl;
@@ -534,12 +542,12 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
 
         break;
 
-        case STATEMICCHATTING:
+        case STATEMICCHATTING: // microphone chatting
             cout << "Mic session started..." << endl;
             startMicChat();
         break;
 
-        case STATEMULTICASTING:
+        case STATEMULTICASTING: // multicasting
             // Stream audio to the multicast address
             cout << "Multicast started..." << endl;
         break;
@@ -552,11 +560,11 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER: 
---
--- PROGRAMMER: 
+-- DESIGNER:    John Agapeyev, Fred Yang
+--  
+-- PROGRAMMER:  John Agapeyev, Fred Yang
 --
 -- INTERFACE:   DWORD WINAPI mcThread(LPVOID params)
 --              LPVOID params: points to client socket
@@ -567,26 +575,26 @@ void handleRequest(const ServerState& currentState, SOCKET clntSocket, string fi
 -- This thread starts up a multicast server.  It then iterates through the list of songs available
 -- on the server and broadcasts each song to the multicast destination address. If a song cannot be
 -- read, it is simply skipped.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 DWORD WINAPI mcThread(LPVOID params)
 {
-    char			mcAddr[ADDRSIZE] = MULTICAST_ADDR;   // multicast address
-    u_short			nPort = MULTICAST_PORT;              // multicast port
-    u_long			mcTTL = MULTICAST_TTL;               // multicast TTL
-    DWORD		    result,                              // result
+    char            mcAddr[ADDRSIZE] = MULTICAST_ADDR;   // multicast address
+    u_short         nPort = MULTICAST_PORT;              // multicast port
+    u_long          mcTTL = MULTICAST_TTL;               // multicast TTL
+    DWORD           result,                              // result
                     count;                               // number of songs
-    BOOL			flag = false;
-    SOCKADDR_IN		server,
+    BOOL            flag = false;
+    SOCKADDR_IN     server,
                     destination;
 
-    struct ip_mreq	stMreq;     // struct for IP_MREQ (IP_ADD_MEMBERSHIP, IP_DROP_MEMBERSHIP)
-    SOCKET			stSocket;    // socket to create
-    WSADATA			stWSAData;
-    vector<string>	list;       // play list
+    struct ip_mreq  stMreq;     // struct for IP_MREQ (IP_ADD_MEMBERSHIP, IP_DROP_MEMBERSHIP)
+    SOCKET          stSocket;   // socket to create
+    WSADATA         stWSAData;
+    vector<string>  list;       // play list
 
-    string			dir,        // audio absolute path
+    string          dir,        // audio absolute path
                     line;       // line to hold the file name
-    ifstream*		fileToSend; // file read stream
+    ifstream*       fileToSend; // file read stream
     fileToSend = new ifstream;
 
     // multicast socket information struct
@@ -595,10 +603,11 @@ DWORD WINAPI mcThread(LPVOID params)
     result = WSAStartup(0x0202, &stWSAData);
     if (result)
     {
-        cerr << "WSAStartup failed: " << result << endl;	
+        cerr << "WSAStartup failed: " << result << endl;
         return FALSE;
     }
 
+     // create socket given socket type and protocol
     stSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (stSocket == INVALID_SOCKET)
     {
@@ -606,10 +615,12 @@ DWORD WINAPI mcThread(LPVOID params)
         return FALSE;
     }
 
+    // set socket structure
     server.sin_family      = AF_INET; 
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port        = 0;
 
+    // bind to the socket
     result = bind(stSocket, (struct sockaddr*)&server, sizeof(server));
     if (result == SOCKET_ERROR) 
     {
@@ -620,6 +631,8 @@ DWORD WINAPI mcThread(LPVOID params)
     stMreq.imr_multiaddr.s_addr = inet_addr(mcAddr);
     stMreq.imr_interface.s_addr = INADDR_ANY;
 
+    // Use the IP_ADD_MEMBERSHIP option to join an IPv4 multicast group on a local IPv4 interface.
+    // Use the SETSOCKOPT API and specify the address of the IP_MREQ structure that contains these addresses.
     result = setsockopt(stSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&stMreq, sizeof(stMreq));
     if (result == SOCKET_ERROR)
     {
@@ -627,6 +640,7 @@ DWORD WINAPI mcThread(LPVOID params)
         return FALSE;
     }
 
+    // Set TTL up to specified number of routes to pass through
     result = setsockopt(stSocket, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&mcTTL, sizeof(mcTTL));
     if (result == SOCKET_ERROR)
     {
@@ -634,6 +648,7 @@ DWORD WINAPI mcThread(LPVOID params)
         return FALSE;
     }
 
+    //  no need to be looped back to your host
     result = setsockopt(stSocket, IPPROTO_IP,  IP_MULTICAST_LOOP, (char *)&flag, sizeof(flag));
     if (result == SOCKET_ERROR)
     {
@@ -641,6 +656,7 @@ DWORD WINAPI mcThread(LPVOID params)
         return FALSE;
     }
 
+    // set destination socket structure
     destination.sin_family =      AF_INET;
     destination.sin_addr.s_addr = inet_addr(mcAddr);
     destination.sin_port =        htons(nPort);
@@ -674,12 +690,14 @@ DWORD WINAPI mcThread(LPVOID params)
             if (!fileToSend->is_open())
                 continue;
 
+            // read bytes from the file
             begin = fileToSend->tellg();
             fileToSend->seekg(0, ios::end);
             end = fileToSend->tellg();
             fileToSend->seekg(0, ios::beg);
             filesize = static_cast<long int>(end - begin);
 
+            // add bytes to the socket
             mcSocket->file = fileToSend;
             mcSocket->mcaddr = destination;
             mcSocket->socket = stSocket;
@@ -709,6 +727,14 @@ DWORD WINAPI mcThread(LPVOID params)
                 mcStreamPlayer->GetStatus(&status);
                 if (status.fPlay == 0)
                     break;
+
+                // Retrieve current position in TStreamTime format. 
+                // If stream is not playing or stream is closed, position is 0.
+                /*TStreamTime pos;
+                mcStreamPlayer->GetPosition(&pos);
+                cout << "Pos: " << pos.hms.hour << ":" << pos.hms.minute << ":"
+                    << pos.hms.second << "." << pos.hms.millisecond << endl;*/
+
             }
 
             fileToSend->close();
@@ -726,11 +752,11 @@ DWORD WINAPI mcThread(LPVOID params)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    John Agapeyev, Fred Yang
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  John Agapeyev, Fred Yang
 --
 -- INTERFACE:   int  __stdcall  mcCallbackFunc(void* instance, void *user_data, libZPlay::TCallbackMessage message, 
                                                unsigned int param1, unsigned int param2)
@@ -740,13 +766,13 @@ DWORD WINAPI mcThread(LPVOID params)
 --              unsigned int param1 - a pointer to buffer with PCM data
 --              unsigned int param2 - number of bytes in PCM buffer
 --
--- RETURNS:		0 on succeed, 1 on failure
+-- RETURNS:     0 on succeed, 1 on failure
 --
 -- NOTES:
--- This function will mainly listen for the MsgWaveBuffer & MsgStreamNeedMoreData message to determine when the multicast
--- thread is ready to multicast the next song.
+-- This function will mainly listen for the MsgWaveBuffer & MsgStreamNeedMoreData message to determine when the
+-  multicast thread is ready to multicast the next song.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 int  __stdcall  mcCallbackFunc(void* instance, void *user_data, libZPlay::TCallbackMessage message, 
                                unsigned int param1, unsigned int param2)
 {
@@ -781,11 +807,11 @@ int  __stdcall  mcCallbackFunc(void* instance, void *user_data, libZPlay::TCallb
 --
 -- DATE:        March 12, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:    
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   string getAudioPath()
 --
@@ -793,7 +819,7 @@ int  __stdcall  mcCallbackFunc(void* instance, void *user_data, libZPlay::TCallb
 --
 -- NOTES:       
 -- This function returns the absolute path of the Audio directory.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 string getAudioPath()
 {
     char buf[MAX_PATH];
@@ -812,11 +838,11 @@ string getAudioPath()
 --
 -- DATE:        March 12, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 5, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    Maitiu Morton
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Maitiu Morton
 --
 -- INTERFACE:   int populatePlayList(vector<string>& list)
 --              vector<string>& list: the vector of strings to populate
@@ -825,7 +851,7 @@ string getAudioPath()
 --
 -- NOTES:       
 -- This function scans the Audio directory, and appends each audio file to the play list.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 int populatePlayList(vector<string>& list)
 {
     int count = 0;
@@ -858,11 +884,11 @@ int populatePlayList(vector<string>& list)
 --
 -- DATE:        March 12, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   string getCommand(const int reqType)
 --              string reqType: request type specified
@@ -871,7 +897,7 @@ int populatePlayList(vector<string>& list)
 --
 -- NOTES:
 -- returns command mapping to the request type.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 string getCommand(const int reqType)
 {
     string cmd;
@@ -909,9 +935,9 @@ string getCommand(const int reqType)
 --
 -- REVISIONS:   (Date and Description)
 --
--- DESIGNER:
+-- DESIGNER:    John Agapeyev
 --
--- PROGRAMMER:
+-- PROGRAMMER:  John Agapeyev
 --
 -- INTERFACE:   void setCursor()
 --
@@ -919,7 +945,7 @@ string getCommand(const int reqType)
 --
 -- NOTES:
 -- Called to set cursor style on the window.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void setCursor()
 {
     HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);

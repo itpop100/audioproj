@@ -3,13 +3,13 @@
 --
 -- DATE:        March 12, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Fred Yang, John Agapeyev, Isaac Morneau, Maitiu Morton
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Fred Yang, John Agapeyev, Isaac Morneau, Maitiu Morton
 --
 -- NOTES:
 -- This header file includes the required function prototypes for asynchronous socket implementation.
---------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------ */
 #ifndef ASYNCSOCKET_H
 #define ASYNCSOCKET_H
 

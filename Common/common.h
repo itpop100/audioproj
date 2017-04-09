@@ -3,13 +3,13 @@
 --
 -- DATE:        March 10, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Fred Yang, John Agapeyev, Isaac Morneau, Maitiu Morton
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Fred Yang, John Agapeyev, Isaac Morneau, Maitiu Morton
 --
 -- NOTES:
 -- This header file includes the common macro definitions and function declarations for the client.
---------------------------------------------------------------------------------------------------------------------*/
+-------------------------------------------------------------------------------------------------------------------*/
 #ifndef COMMON_H
 #define COMMON_H
 

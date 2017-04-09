@@ -3,14 +3,14 @@
 --
 -- DATE:        March 12, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Fred Yang
 --
 -- NOTES:
 -- This header file includes the required macro definitions and function declarations for microphone chat 
 -- implementation (Microphone.cpp).
---------------------------------------------------------------------------------------------------------------------*/
+-------------------------------------------------------------------------------------------------------------------*/
 #ifndef MICROPHONE_H
 #define MICROPHONE_H
 

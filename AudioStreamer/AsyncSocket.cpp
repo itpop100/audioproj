@@ -1,4 +1,4 @@
-/*------------------------------------------------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------------------------------------------
 -- SOURCE FILE:     AsyncSocket.cpp -  This file contains the implementation of listen socket (server side).
 --
 -- PROGRAM:         AudioPlayer
@@ -9,12 +9,12 @@
 --
 -- REVISIONS:
 --
--- DESIGNER:		
+-- DESIGNER:        John Agapeyev
 --
--- PROGRAMMER:		
+-- PROGRAMMER:      John Agapeyev
 --
 -- NOTES:
-----------------------------------------------------------------------------------------------------------------------*/
+-------------------------------------------------------------------------------------------------------------------*/
 #include "AsyncSocket.h"
 using namespace std;
 
@@ -25,9 +25,9 @@ using namespace std;
 --
 -- REVISIONS:   (Date and Description)
 --
--- DESIGNER:
+-- DESIGNER:    John Agapeyev
 --
--- PROGRAMMER:
+-- PROGRAMMER:  John Agapeyev
 --
 -- INTERFACE:   SOCKET createListenSocket(WSADATA* wsaData, int protocol, SOCKADDR_IN* udpaddr)
 --              WSADATA* wsaData: contains information about the Windows Sockets implementation

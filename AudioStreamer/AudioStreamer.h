@@ -3,14 +3,14 @@
 --
 -- DATE:        March 12, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Fred Yang, John Agapeyev, Isaac Morneau, Maitiu Morton
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Fred Yang, John Agapeyev, Isaac Morneau, Maitiu Morton
 --
 -- NOTES:
 -- This header file includes the required macro definitions and function declarations for server side implementation
 -- (AudioStreamer.cpp).
---------------------------------------------------------------------------------------------------------------------*/
+-------------------------------------------------------------------------------------------------------------------*/
 #ifndef AUDIOSTREAMER_H
 #define AUDIOSTREAMER_H
 

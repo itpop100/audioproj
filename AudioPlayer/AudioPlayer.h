@@ -3,9 +3,9 @@
 --
 -- DATE:        March 10, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Fred Yang, Isaac Morneau
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Fred Yang, Isaac Morneau
 --
 -- NOTES:
 -- This header file includes the definition of AudioPlayer class.

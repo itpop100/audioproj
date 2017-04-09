@@ -27,11 +27,11 @@
 -- 
 -- DATE:            March 9, 2017
 --
--- REVISIONS: 
+-- REVISIONS:       April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:        Fred Yang, Isaac Morneau, Maitiu Morton, John Agapeyev
 --
--- PROGRAMMER:
+-- PROGRAMMER:      Fred Yang, Isaac Morneau, Maitiu Morton, John Agapeyev
 --
 -- NOTES:
 -- The project uses libZPlay multimedia library. libZplay is one for playing mp3, mp2, mp1, ogg, flac, ac3, aac, 
@@ -40,7 +40,7 @@
 -- To link the libzplay.lib, right click project Porperties, then go to configuration properties>linker>input,
 -- add "libzplay.lib" in the field "additional dependencies". 
 -- libzplay.dll must also be placed into your windows/system32 and windows/syswow64.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 
 #include "Main.h"
 
@@ -58,9 +58,9 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 --
 -- REVISIONS:   
 --
--- DESIGNER:    
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER:  
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int nCmdShow)
 --              HINSTANCE hInst: Handle to the current instance of the program.
@@ -72,7 +72,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 --
 -- NOTES:
 -- This function is the entry point for a graphical Windows-based application.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 int WINAPI WinMain(HINSTANCE hInst,HINSTANCE hPrevInst,LPSTR lpCmdLine,int nCmdShow)
 {
     // Hold message(s) from message queue
@@ -134,11 +134,11 @@ int WINAPI WinMain(HINSTANCE hInst,HINSTANCE hPrevInst,LPSTR lpCmdLine,int nCmdS
 --
 -- DATE:        March 8, 2017
 --
--- REVISIONS: 
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    Isaac Morneau, Maitiu Morton
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Isaac Morneau, Maitiu Morton
 --
 -- INTERFACE:   LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 --              HWND hWnd: a handle to the window.
@@ -152,7 +152,7 @@ int WINAPI WinMain(HINSTANCE hInst,HINSTANCE hPrevInst,LPSTR lpCmdLine,int nCmdS
 --
 -- NOTES:
 -- Main callback function that processes messages sent to a window.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 LRESULT CALLBACK WndProc(HWND hWnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
     static OPENFILENAME ofn = {0};  // common dialog box structure to open a file
@@ -204,25 +204,28 @@ LRESULT CALLBACK WndProc(HWND hWnd,UINT msg,WPARAM wParam,LPARAM lParam)
 
             switch(LOWORD(wParam))
             {
-            case ID_FILE_EXIT:
+            case ID_FILE_EXIT:  // exit
                 {
                     // quit
                     PostQuitMessage(0);
                 }
                 break;
 
-            case ID_FILE_CONNECT:
+            case ID_FILE_CONNECT:   // connect to server
                 {
                     if (!connected)
                     {
                         // get user input: hostname & port
-                        SendMessage(GetDlgItem(hWnd,IDC_EDIT_PORT), WM_GETTEXT,sizeof(szPort)/sizeof(szPort[0]),(LPARAM)szPort);
-                        SendMessage(GetDlgItem(hWnd,IDC_EDIT_HOSTNAME), WM_GETTEXT,sizeof(szServer)/sizeof(szServer[0]),(LPARAM)szServer);
+                        SendMessage(GetDlgItem(hWnd,IDC_EDIT_PORT), WM_GETTEXT,
+                            sizeof(szPort)/sizeof(szPort[0]),(LPARAM)szPort);
+                        SendMessage(GetDlgItem(hWnd,IDC_EDIT_HOSTNAME), WM_GETTEXT,
+                            sizeof(szServer)/sizeof(szServer[0]),(LPARAM)szServer);
 
                         WSADATA wsaData;
                         if (clnt.runClient(&wsaData, szServer, atoi(szPort)))
                         {
-                            SendMessage(GetDlgItem(hWnd,IDC_MAIN_STATUS), SB_SETTEXT, STATUSBAR_STATUS, (LPARAM)"Connected");
+                            SendMessage(GetDlgItem(hWnd,IDC_MAIN_STATUS), SB_SETTEXT, 
+                                STATUSBAR_STATUS, (LPARAM)"Connected");
                             EnableWindow(GetDlgItem(hWnd,IDC_BUTTON_OK), TRUE); 
                             EnableWindow(GetDlgItem(hWnd, IDC_EDIT_PORT), FALSE);
                             EnableWindow(GetDlgItem(hWnd, IDC_EDIT_HOSTNAME), FALSE);
@@ -248,33 +251,38 @@ LRESULT CALLBACK WndProc(HWND hWnd,UINT msg,WPARAM wParam,LPARAM lParam)
             }
             break;
 
-            case ID_HELP_ABOUT:
+            case ID_HELP_ABOUT: // about
             {
                 MessageBox(hWnd, szTitle, "About", MB_ICONINFORMATION|MB_OK);
             }
             break;
 
-            case IDC_BUTTON_PLAY:
-            case IDC_BUTTON_REWIND:
+            case IDC_BUTTON_PLAY:   // play
+            case IDC_BUTTON_REWIND: // rewind
             {
+                if (clnt.currentState == STREAMING)
+                {
+                    closeAudio(hWnd, clnt);
+                    ::SleepEx(SLEEPSPAN, FALSE);
+                }
                 playAudio(hWnd, clnt);
             }
             break;
 
-            case IDC_BUTTON_FORWARD:
-            case IDC_BUTTON_STOP:
+            case IDC_BUTTON_FORWARD: // forward
+            case IDC_BUTTON_STOP:    // stop
             {
-                stopAudio(clnt);
+                closeAudio(hWnd, clnt);
             }
             break;
 
-            case IDC_BUTTON_PAUSE:
+            case IDC_BUTTON_PAUSE:  // pause
             {
                 pauseAudio(clnt);
             }
             break;
 
-            case IDC_BUTTON_OK:
+            case IDC_BUTTON_OK:    // submit
             {
                 if (IsDlgButtonChecked(hWnd, IDC_RADIO_DOWNLOAD) == BST_CHECKED )
                 {
@@ -330,7 +338,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,UINT msg,WPARAM wParam,LPARAM lParam)
             }
             break;
 
-            case IDC_BUTTON_CANCEL:
+            case IDC_BUTTON_CANCEL:  // reset
             {
                 closeAudio(hWnd, clnt);
             }
@@ -375,14 +383,14 @@ LRESULT CALLBACK WndProc(HWND hWnd,UINT msg,WPARAM wParam,LPARAM lParam)
 --
 -- REVISIONS: 
 --
--- DESIGNER: 
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Isaac Morneau
 --
--- INTERFACE: string getFileName(string path)
---            string path: absolute path of a file
+-- INTERFACE:   string getFileName(string path)
+--              string path: absolute path of a file
 --
--- RETURNS:   filename and extension
+-- RETURNS:     filename and extension
 --
 -- NOTES:
 -- Called to retrieve filename given absolute path.
@@ -402,11 +410,11 @@ string getFileName(string path)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang 
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   DWORD WINAPI listThread (LPVOID params)
 --              LPVOID params: points to UPLOADCONTEXT struct
@@ -462,11 +470,11 @@ DWORD WINAPI listThread (LPVOID params)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Maitiu Morton
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Maitiu Morton
 --
 -- INTERFACE:   uploadRequest(AudioPlayer& clnt, HWND hWnd, OPENFILENAME& ofn)
 --              AudioPlayer& clnt: client object that connects to server
@@ -478,7 +486,7 @@ DWORD WINAPI listThread (LPVOID params)
 -- NOTES:
 -- Request to upload an audio file.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 bool uploadRequest(AudioPlayer& clnt, HWND hWnd, OPENFILENAME &ofn)
 {
     openFileDialog(hWnd, ofn);
@@ -498,11 +506,11 @@ bool uploadRequest(AudioPlayer& clnt, HWND hWnd, OPENFILENAME &ofn)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Maitiu Morton
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Maitiu Morton
 --
 -- INTERFACE:   downloadRequest(AudioPlayer &clnt)
 --              AudioPlayer& clnt: client object that connects to server
@@ -525,11 +533,11 @@ bool downloadRequest(AudioPlayer &clnt)
 --
 -- DATE:        March 10, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   bool listRequest(AudioPlayer& clnt, HWND* hWnd)
 --              AudioPlayer& clnt: client object that connects to server
@@ -540,7 +548,7 @@ bool downloadRequest(AudioPlayer &clnt)
 -- NOTES:
 -- Fetch song list from server and populate in the list box.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 bool listRequest(AudioPlayer& clnt, HWND* hWnd)
 {
     UPLOADCONTEXT* uc = new UPLOADCONTEXT;
@@ -557,11 +565,11 @@ bool listRequest(AudioPlayer& clnt, HWND* hWnd)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 6, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Isaac Morneau, Fred Yang
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Isaac Morneau, Fred Yang
 --
 -- INTERFACE:   bool streamRequest(AudioPlayer& clnt)
 --              AudioPlayer& clnt: client object that connects to server
@@ -583,11 +591,11 @@ bool streamRequest(AudioPlayer& clnt)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 5, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   bool micRequest(AudioPlayer& clnt)
 --              AudioPlayer& clnt: client object that connects to server
@@ -597,7 +605,7 @@ bool streamRequest(AudioPlayer& clnt)
 -- NOTES:
 -- Called to start the microphone chat thread.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 bool micRequest(AudioPlayer& clnt)
 {
     UPLOADCONTEXT* uc = new UPLOADCONTEXT;
@@ -614,11 +622,11 @@ bool micRequest(AudioPlayer& clnt)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 6, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   DWORD WINAPI micThread(LPVOID param)
 --              LPVOID param: upload context specified
@@ -639,6 +647,7 @@ DWORD WINAPI micThread(LPVOID param)
     clnt->currentState = MICROPHONE;
     clnt->dispatchSend(userReq);
 
+    // handle if fails to create socket
     if(!createMicSocket())
     {
         clnt->currentState = WAITFORCOMMAND;
@@ -657,11 +666,11 @@ DWORD WINAPI micThread(LPVOID param)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   bool startMicChat()
 --
@@ -671,7 +680,7 @@ DWORD WINAPI micThread(LPVOID param)
 -- This function starts the microphone chat session and transfers data between the 
 -- server and client.
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 bool startMicChat()
 {
     // stream player & settings
@@ -708,7 +717,7 @@ bool startMicChat()
     // start listening to mic
     micPlayer->Play();
 
-    while(TRUE) {
+    while (TRUE) {
         char * buffer = new char[MAXBUFSIZE];
         int size = sizeof(micServer);
 
@@ -743,7 +752,7 @@ bool startMicChat()
         if(status.fPlay == 0)
             break; 
 
-        //  retrieve current position in TStreamTime format. 
+        // Retrieve current position in TStreamTime format. 
         // If stream is not playing or stream is closed, position is 0.
         TStreamTime pos;
         micPlayer->GetPosition(&pos);
@@ -758,11 +767,11 @@ bool startMicChat()
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 1, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   bool createMicSocket() 
 --
@@ -771,7 +780,7 @@ bool startMicChat()
 -- NOTES:
 -- This function creates a UDP socket for the mictophone session
 --
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 bool createMicSocket() {
     // contains information about the Windows Sockets implementation.
     WSADATA wsaData;
@@ -788,6 +797,7 @@ bool createMicSocket() {
     micServer.sin_family = AF_INET;
     micServer.sin_port = htons(UDPPORT);
 
+    // get host IP by its name
     if ((hp = gethostbyname(szServer)) == NULL)
     {
         MessageBox(NULL, "Unknown server address", NULL, NULL);
@@ -796,8 +806,12 @@ bool createMicSocket() {
     }
 
     memcpy((char *)&micServer.sin_addr, hp->h_addr, hp->h_length);
+    
+    // create socket given socket type and protocol
     micSocket = socket(AF_INET, SOCK_DGRAM, 0);
     memset((char *)&micClient, 0, sizeof(micClient));
+    
+    // set microphone socket structure
     micClient.sin_family = AF_INET;
     micClient.sin_port = htons(0);
     micClient.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -817,11 +831,11 @@ bool createMicSocket() {
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:    John Agapeyev
 --
--- PROGRAMMER:
+-- PROGRAMMER:  John Agapeyev
 --
 -- INTERFACE:   bool mcRequest(AudioPlayer& clnt)
 --              AudioPlayer& clnt: client object that connects to server
@@ -830,7 +844,7 @@ bool createMicSocket() {
 --
 -- NOTES:
 -- Called to send multicast request to the server.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 bool mcRequest(AudioPlayer& clnt)
 {
     UPLOADCONTEXT* uc = new UPLOADCONTEXT;
@@ -846,11 +860,11 @@ bool mcRequest(AudioPlayer& clnt)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    John Agapeyev
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  John Agapeyev
 --
 -- INTERFACE:   SOCKET createMCSocket()
 --
@@ -862,13 +876,14 @@ bool mcRequest(AudioPlayer& clnt)
 ----------------------------------------------------------------------------------------------------------------------*/
 SOCKET createMCSocket()
 {
-    SOCKET			hSocket;
-    WSADATA			stWSAData;
-    SOCKADDR_IN		local_address;
-    BOOL			fFlag;
-    int				nRet;
+    SOCKET          hSocket;
+    WSADATA         stWSAData;
+    SOCKADDR_IN     local_address;
+    BOOL            fFlag;
+    int             nRet;
     u_short nPort = MULTICAST_PORT;
 
+    // Open up a Winsock session
     nRet = WSAStartup(0x0202, &stWSAData);
     if (nRet)
     {
@@ -876,6 +891,7 @@ SOCKET createMCSocket()
         return NULL;
     }
 
+    // create socket given socket type and protocol
     hSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (hSocket == INVALID_SOCKET)
     {
@@ -885,12 +901,16 @@ SOCKET createMCSocket()
     }
 
     fFlag = TRUE;
+    
+    // Specifies that the rules used in validating addresses supplied to bind() should
+    // allow reuse of local addresses
     nRet = setsockopt(hSocket, SOL_SOCKET, SO_REUSEADDR, (char *)&fFlag, sizeof(fFlag));
     if (nRet == SOCKET_ERROR)
     {
         MessageBox(NULL, "setsockopt() SO_REUSEADDR failed", "Error", MB_OK);
     }
 
+    // set socket structure
     local_address.sin_family      = AF_INET;
     local_address.sin_addr.s_addr = htonl(INADDR_ANY);
     local_address.sin_port        = htons(nPort);
@@ -911,11 +931,11 @@ SOCKET createMCSocket()
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:   (Date and Description)
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    John Agapeyev
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  John Agapeyev
 --
 -- INTERFACE:   DWORD WINAPI mcThread(LPVOID args)
 --              LPVOID args: the argument passed in
@@ -925,15 +945,15 @@ SOCKET createMCSocket()
 -- NOTES:  
 -- This function creates a multicast socket, sets up the multicast group, and plays the multicasted data
 -- received from the sever.  Upon completion, the host is removed from the group and the socket is closed.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 DWORD WINAPI mcThread(LPVOID args)
 {
-    SOCKET			hSocket;
-    int				result;
-    struct ip_mreq	stMreq;
-    SOCKADDR_IN		server;
-    char			mcAddr[ADDRSIZE] = MULTICAST_ADDR;
-    u_short			nPort = MULTICAST_PORT;
+    SOCKET          hSocket;
+    int             result;
+    struct ip_mreq  stMreq;
+    SOCKADDR_IN     server;
+    char            mcAddr[ADDRSIZE] = MULTICAST_ADDR;
+    u_short         nPort = MULTICAST_PORT;
 
     streamPlayer = CreateZPlay();
     streamPlayer->SetSettings(sidSamplerate, SAMPLERATE);
@@ -1016,11 +1036,11 @@ DWORD WINAPI mcThread(LPVOID args)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS: 
+-- REVISIONS:   April 5, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    Isaac Morneau, Fred Yang
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Isaac Morneau, Fred Yang
 --
 -- INTERFACE:   bool renderUI(HWND hWnd)
 --              HWND hWnd: the handle to the main window
@@ -1146,13 +1166,13 @@ bool renderUI(HWND hWnd)
         ,WM_SETFONT, (WPARAM)hFont, TRUE);
 
     SendMessage(
-        CreateWindow("BUTTON", "&OK", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
+        CreateWindow("BUTTON", "&Submit", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
         550, 442, 100, 30, hWnd, (HMENU)IDC_BUTTON_OK, GetModuleHandle(NULL), NULL)
         ,WM_SETFONT, (WPARAM)hFont, TRUE);
     EnableWindow(GetDlgItem(hWnd,IDC_BUTTON_OK), FALSE); 
 
     SendMessage(
-        CreateWindow("BUTTON", "&Cancel", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
+        CreateWindow("BUTTON", "&Reset", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
         670, 442, 100, 30, hWnd, (HMENU)IDC_BUTTON_CANCEL, GetModuleHandle(NULL), NULL)
         ,WM_SETFONT, (WPARAM)hFont, TRUE);
 
@@ -1177,11 +1197,11 @@ bool renderUI(HWND hWnd)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS: 
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER: 
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   int openFileDialog(HWND hWnd, OPENFILENAME& ofn)
 --              HWND hWnd: handle to the main window
@@ -1214,11 +1234,11 @@ void openFileDialog(HWND hWnd, OPENFILENAME &ofn)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS: 
+-- REVISIONS:   
 --
--- DESIGNER: 
+-- DESIGNER:    Maitiu Morton
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Maitiu Morton
 --
 -- INTERFACE:   vector<string> processPlayList(string str)
 --              string -- string of songs separated by new-line characters
@@ -1249,9 +1269,9 @@ vector<string> processPlayList(const string& str)
 --
 -- REVISIONS: 
 --
--- DESIGNER: 
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   bool populatePlayList(HWND hList, vector<string> list)
 --              HWND hList -- handle to the playlist box
@@ -1288,9 +1308,9 @@ bool populatePlayList(HWND hList, vector<string> list)
 --
 -- REVISIONS: 
 --
--- DESIGNER: 
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER: 
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   string getSelectedListBoxItem(HWND* hWnd, int idListBox)
 --              HWND* hWnd: pointer to main window
@@ -1325,7 +1345,7 @@ string getSelectedListBoxItem(HWND* hWnd, int idListBox)
     // get the text of the selected item
     if (iSelected == -1)
     {
-        MessageBox(NULL, "No file selected to download", "Error", MB_OK);
+        MessageBox(NULL, "No file selected!", "Error", MB_OK);
         return "ERROR";
     }
 
@@ -1342,11 +1362,11 @@ string getSelectedListBoxItem(HWND* hWnd, int idListBox)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:	
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:	
+-- DESIGNER:    Fred Yang
 --
--- PROGRAMMER:	
+-- PROGRAMMER:  Fred Yang
 --
 -- INTERFACE:   int __stdcall micCallBackFunc (void* instance, void* user_data, TCallbackMessage message, 
 --                                             unsigned int param1, unsigned int param2)
@@ -1391,11 +1411,11 @@ int __stdcall micCallBackFunc (void* instance, void *user_data, TCallbackMessage
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 7, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   void playAudio(HWND hWnd, AudioPlayer& audioClnt)
 --              HWND* hWnd: pointer to main window
@@ -1405,12 +1425,12 @@ int __stdcall micCallBackFunc (void* instance, void *user_data, TCallbackMessage
 --
 -- NOTES:
 -- Plays the audio specified.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void playAudio(HWND hWnd, AudioPlayer& audioClnt)
 {
     if (audioClnt.currentState != WAITFORCOMMAND)
     {
-        MessageBox(hWnd, szWarn, "Warning", MB_ICONWARNING);
+        //MessageBox(hWnd, szWarn, "Warning", MB_ICONWARNING);
         return;
     }
 
@@ -1436,11 +1456,11 @@ void playAudio(HWND hWnd, AudioPlayer& audioClnt)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   void pauseAudio(AudioPlayer& audioClnt)
 --              AudioPlayer& audioClnt: client object
@@ -1460,11 +1480,11 @@ void pauseAudio(AudioPlayer& audioClnt)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 6, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Isaac Morneau
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Isaac Morneau
 --
 -- INTERFACE:   void stopAudio(AudioPlayer& audioClnt)
 --              AudioPlayer& audioClnt: client object
@@ -1484,11 +1504,11 @@ void stopAudio(AudioPlayer& audioClnt)
 --
 -- DATE:        March 11, 2017
 --
--- REVISIONS:
+-- REVISIONS:   April 8, 2017
 --
--- DESIGNER:
+-- DESIGNER:    Maitiu Morton
 --
--- PROGRAMMER:
+-- PROGRAMMER:  Maitiu Morton
 --
 -- INTERFACE:   void closeAudio(HWND hWnd, AudioPlayer& audioClnt)
 --              HWND* hWnd: pointer to main window
@@ -1498,7 +1518,7 @@ void stopAudio(AudioPlayer& audioClnt)
 --
 -- NOTES:
 -- closes the audio specified and free up the resource associated with it.
-----------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 void closeAudio(HWND hWnd, AudioPlayer& audioClnt)
 {
     if ((streamPlayer != NULL) || (micPlayer != NULL))
@@ -1506,6 +1526,7 @@ void closeAudio(HWND hWnd, AudioPlayer& audioClnt)
         if (audioClnt.currentState == MICROPHONE) {
             sendto(micSocket, 0, 0, 0, (const sockaddr*)&micServer, sizeof(sockaddr_in));
             closesocket(micSocket);
+            closesocket(mcSocket);
         }
 
         // clean up stream player
@@ -1517,7 +1538,6 @@ void closeAudio(HWND hWnd, AudioPlayer& audioClnt)
     audioClnt.currentState = NOTCONNECTED;
     audioClnt.player_->Stop();
 
-    closesocket(mcSocket);
     closesocket(audioClnt.connectSocket_);
 
     // get user input
@@ -1525,6 +1545,8 @@ void closeAudio(HWND hWnd, AudioPlayer& audioClnt)
     SendMessage(GetDlgItem(hWnd, IDC_EDIT_HOSTNAME), WM_GETTEXT, sizeof(szServer) / sizeof(szServer[0]), (LPARAM)szServer);
 
     WSADATA wsaData;
+    
+    // send request to retrieve the play list of songs
     if (audioClnt.runClient(&wsaData, szServer, atoi(szPort)))
     {
         SendMessage(GetDlgItem(hWnd, IDC_MAIN_STATUS), SB_SETTEXT, STATUSBAR_STATUS, (LPARAM)"Connected");
