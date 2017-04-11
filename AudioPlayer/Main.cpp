@@ -272,7 +272,8 @@ LRESULT CALLBACK WndProc(HWND hWnd,UINT msg,WPARAM wParam,LPARAM lParam)
             case IDC_BUTTON_FORWARD: // forward
             case IDC_BUTTON_STOP:    // stop
             {
-                closeAudio(hWnd, clnt);
+                stopAudio(clnt);
+                ::SleepEx(SLEEPSPAN, FALSE);
             }
             break;
 
@@ -1526,7 +1527,6 @@ void closeAudio(HWND hWnd, AudioPlayer& audioClnt)
         if (audioClnt.currentState == MICROPHONE) {
             sendto(micSocket, 0, 0, 0, (const sockaddr*)&micServer, sizeof(sockaddr_in));
             closesocket(micSocket);
-            closesocket(mcSocket);
         }
 
         // clean up stream player
@@ -1534,18 +1534,20 @@ void closeAudio(HWND hWnd, AudioPlayer& audioClnt)
     }
 
     // return to idle state
-    connected = false;
-    audioClnt.currentState = NOTCONNECTED;
     audioClnt.player_->Stop();
 
+    connected = false;
+    audioClnt.currentState = NOTCONNECTED;
+
     closesocket(audioClnt.connectSocket_);
+    closesocket(mcSocket);
 
     // get user input
     SendMessage(GetDlgItem(hWnd, IDC_EDIT_PORT), WM_GETTEXT, sizeof(szPort) / sizeof(szPort[0]), (LPARAM)szPort);
     SendMessage(GetDlgItem(hWnd, IDC_EDIT_HOSTNAME), WM_GETTEXT, sizeof(szServer) / sizeof(szServer[0]), (LPARAM)szServer);
 
     WSADATA wsaData;
-    
+
     // send request to retrieve the play list of songs
     if (audioClnt.runClient(&wsaData, szServer, atoi(szPort)))
     {
@@ -1561,4 +1563,5 @@ void closeAudio(HWND hWnd, AudioPlayer& audioClnt)
     else {
         MessageBox(hWnd, szWarn, "Warning", MB_ICONWARNING);
     }
+
 }
