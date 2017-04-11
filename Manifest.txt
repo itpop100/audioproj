@@ -93,17 +93,19 @@ and Release folder, respectively.
       |
       -audio     (audio folder)
          |
-         bird01.mp3
+         bird01.wav
          |
          bird02.mp3
          |
-         push.wav
+         trip01.wav
          |
-         trip.ogg
+         trip02.ogg
       |
        AudioPlayer.exe   (AudioPlayer execuatable)
       |
        AudioStreamer.exe (AudioStreamer executable)
+      |
+       libzplay.dll (third-party libzplay dynamic link library)
 
 
 
