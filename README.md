@@ -1,6 +1,9 @@
 ---------------------------------------------------------------
                Audio Streamer Project - Readme
 ---------------------------------------------------------------
+#BCIT CST NoName Group
+
+#Fred Yang, John Agapeyev, Maitiu Morton, Isaac Morneau
 
 This readme outlines the steps on how to run the application.
 
